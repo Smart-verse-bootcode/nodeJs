@@ -530,7 +530,7 @@ textarea.email-box{
       <div class="page-head">
         <div class="eyebrow">Step 3</div>
         <h1>Export</h1>
-        <div class="subtitle">One workbook, five sheets — built fresh from the rules currently in Step 1. Change a rule and re-run to regenerate everything downstream.</div>
+        <div class="subtitle">One workbook, six sheets — built fresh from the rules currently in Step 1. Change a rule and re-run to regenerate everything downstream.</div>
       </div>
 
       <div class="panel">
@@ -540,6 +540,7 @@ textarea.email-box{
           <div class="export-item"><div class="num">3</div><div><h4>Formula Explanation</h4><p>Every designation's attendance and beat/market-working rule written out in plain words — regenerates automatically when you edit a rule.</p></div></div>
           <div class="export-item"><div class="num">4</div><div><h4>Differences</h4><p>Every case where the raw status disagrees with what Smartverse computes from your rules, including late-login downgrades.</p></div></div>
           <div class="export-item"><div class="num">5</div><div><h4>Activity Verification</h4><p>Full GPS detail, beat-compliance status, per-employee-day analytics, and a highlighted list of exactly who/when needs a manual check and why.</p></div></div>
+          <div class="export-item"><div class="num">6</div><div><h4>Verify</h4><p>One row per employee with any doubt or rule breach — sorted worst-first, with a breakdown of P1/P2/P3/GPS/rule issues and every flagged day's exact reason.</p></div></div>
         </div>
         <div class="btn-row">
           <button class="btn btn-primary" id="btnExport" disabled>⬇ Download Smartverse_Report.xlsx</button>
@@ -581,6 +582,7 @@ const state = {
 
 const DEFAULT_RULES = [
  {desig:'SO', method:'First Call to Log out', full:8, hdMin:4.5, hdMax:8, egMin:7, egMax:8, absentBelow:4.5, note:''},
+ {desig:'TSO', method:'First Call to Log out', full:8, hdMin:4.5, hdMax:8, egMin:7, egMax:8, absentBelow:4.5, note:''},
  {desig:'SSSM', method:'First Call to Log out', full:8, hdMin:4.5, hdMax:8, egMin:null, egMax:null, absentBelow:4.5, note:''},
  {desig:'EX-DSM', method:'Log In to Log Out', full:8, hdMin:4.5, hdMax:8, egMin:null, egMax:null, absentBelow:4.5, note:''},
  {desig:'PROMOTER', method:'Log In to Log Out', full:8, hdMin:4.5, hdMax:8, egMin:null, egMax:null, absentBelow:4.5, note:'HD if Log-in after 11:30 AM'},
@@ -1282,6 +1284,7 @@ function runAudit(){
     const durationHrs = parseDurationHours(durationTxt);
     const inTimeVal = map.inTime!=null? r[map.inTime]:null;
     const outTimeVal = map.outTime!=null? r[map.outTime]:null;
+    const firstCallVal = map.firstCallTime!=null? r[map.firstCallTime]:null;
     const rawTotalKm = map.totalKm!=null? parseFloat(r[map.totalKm]) : NaN;
     if(designation) desigSet.add(designation);
 
@@ -1302,19 +1305,30 @@ function runAudit(){
     const rawCode = rawStatusToCode(rawStatusTxt);
     let finalCode = rawCode;
     let computed = {code:null, early:false};
+    let noFirstCall=false;
     const rule=findRule(designation);
 
     if(!isNonWorkingStatus(rawStatusTxt) && rawCode!=='WO'){
-      computed = computeStatus(durationHrs, rule);
-      if(rule && computed.code && rawCode && computed.code!==rawCode){
-        diffs.push({empCode,name,designation,branch,date,rawStatus:rawCode,computedStatus:computed.code,durationHrs,
-          reason:`Raw report says ${rawCode}, but ${durationHrs.toFixed(2)} hrs against the ${designation} rule (Full≥${rule.full}h, Half≥${rule.hdMin}h, Absent<${rule.absentBelow}h) computes to ${computed.code}.`});
+      noFirstCall = rule && rule.method==='First Call to Log out' && (firstCallVal==null || firstCallVal==='');
+      if(noFirstCall){
+        computed = {code:'AB', early:false};
+        if(rawCode && rawCode!=='AB'){
+          diffs.push({empCode,name,designation,branch,date,rawStatus:rawCode,computedStatus:'AB',durationHrs,
+            reason:`${designation} is timed "First Call to Log out" but no First Call Time is recorded in the Daily Performance Report — marked Absent regardless of raw status or duration (never P1).`});
+        }
+        finalCode='AB';
+      } else {
+        computed = computeStatus(durationHrs, rule);
+        if(rule && computed.code && rawCode && computed.code!==rawCode){
+          diffs.push({empCode,name,designation,branch,date,rawStatus:rawCode,computedStatus:computed.code,durationHrs,
+            reason:`Raw report says ${rawCode}, but ${durationHrs.toFixed(2)} hrs against the ${designation} rule (Full≥${rule.full}h, Half≥${rule.hdMin}h, Absent<${rule.absentBelow}h) computes to ${computed.code}.`});
+        }
+        if(!rule){
+          diffs.push({empCode,name,designation,branch,date,rawStatus:rawCode,computedStatus:'NO RULE',durationHrs,
+            reason:`No attendance rule defined for designation "${designation}" — add one in Step 1.`});
+        }
+        finalCode = rawCode || computed.code;
       }
-      if(!rule){
-        diffs.push({empCode,name,designation,branch,date,rawStatus:rawCode,computedStatus:'NO RULE',durationHrs,
-          reason:`No attendance rule defined for designation "${designation}" — add one in Step 1.`});
-      }
-      finalCode = rawCode || computed.code;
     }
 
     // late-cutoff override (e.g. "HD if Log-in after 11:30 AM")
@@ -1346,7 +1360,7 @@ function runAudit(){
           reasonType:'low_activity', reason:`Marked ${finalCode} (${durationHrs.toFixed(1)} hrs) but only ${pings} GPS ping(s) and ${km.toFixed(2)} km travelled — below the ${minPings} pings / ${minKm} km expected.`});
       }
     }
-    if(computed.code && rawCode && computed.code!==rawCode && rule){
+    if(computed.code && rawCode && computed.code!==rawCode && rule && !noFirstCall){
       flags.push({empCode,name,designation,branch,date,finalCode,durationHrs,pings,km,
         reasonType:'rule_mismatch', reason:`Raw status ${rawCode} doesn't match rule-computed ${computed.code} for ${durationHrs.toFixed(2)} hrs worked.`});
     }
@@ -1543,6 +1557,7 @@ function renderFlagsTable(){
    ========================================================= */
 function explainRule(r){
   let s = `${r.desig}: timing measured "${r.method}". `;
+  if(r.method==='First Call to Log out') s += `If no First Call Time is recorded in the Daily Performance Report, it's marked Absent regardless of any other data — it never becomes P or a beat-compliance status. `;
   s += `Marked Full Day (P) if total working time is ${r.full} hours or more. `;
   if(r.hdMin!=null) s += `Marked Half Day (HD) if between ${r.hdMin} and ${r.hdMax===Infinity?'∞':r.hdMax} hours. `;
   s += `Marked Absent (AB) if under ${r.absentBelow} hours. `;
@@ -1698,6 +1713,65 @@ async function exportWorkbook(){
   });
   ws5.getColumn('reason').alignment={wrapText:true,vertical:'top'};
   ws5.autoFilter = {from:'A1', to:'O1'};
+
+  /* ---- Sheet 6: Verify — employees with doubt / rule breaches ---- */
+  const ws6 = wb.addWorksheet('Verify');
+  const empInfo = new Map();
+  state.processed.forEach(r=>{
+    if(!empInfo.has(r.empCode)) empInfo.set(r.empCode, {name:r.name, designation:r.designation, branch:r.branch, reportingHead:r.reportingHead, state:r.state, empStatus:r.empStatus});
+  });
+  const REASON_LABEL = {
+    rule_mismatch:'Rule mismatch', no_activity:'No GPS activity', low_activity:'Low GPS activity',
+    radius_deviation:'Beat radius deviation (P1)', min_hours_not_met:'Min market hours not met (P2)', no_logout:'No manual logout (P3)'
+  };
+  const byEmpFlags = new Map();
+  state.flags.forEach(f=>{
+    if(!byEmpFlags.has(f.empCode)) byEmpFlags.set(f.empCode, []);
+    byEmpFlags.get(f.empCode).push(f);
+  });
+  ws6.columns=[
+    {header:'Emp Code',key:'empCode',width:12},{header:'Name',key:'name',width:22},
+    {header:'Designation',key:'designation',width:20},{header:'Branch',key:'branch',width:14},
+    {header:'Reporting Head',key:'reportingHead',width:20},{header:'State',key:'state',width:13},
+    {header:'Current Status',key:'empStatus',width:13},
+    {header:'Total Flagged Days',key:'total',width:14},
+    {header:'Radius Deviation (P1)',key:'p1',width:16},
+    {header:'Min Hours Not Met (P2)',key:'p2',width:17},
+    {header:'No Logout (P3)',key:'p3',width:13},
+    {header:'GPS Mismatch',key:'gps',width:13},
+    {header:'Rule Mismatch',key:'rule',width:13},
+    {header:'Detail (date: reason)',key:'detail',width:90}
+  ];
+  styleHeader(ws6, ws6.getRow(1));
+  const empRows = [...byEmpFlags.entries()].map(([empCode, list])=>{
+    const info = empInfo.get(empCode) || {};
+    const counts = {p1:0,p2:0,p3:0,gps:0,rule:0};
+    list.forEach(f=>{
+      if(f.reasonType==='radius_deviation') counts.p1++;
+      else if(f.reasonType==='min_hours_not_met') counts.p2++;
+      else if(f.reasonType==='no_logout') counts.p3++;
+      else if(f.reasonType==='no_activity'||f.reasonType==='low_activity') counts.gps++;
+      else if(f.reasonType==='rule_mismatch') counts.rule++;
+    });
+    const detail = list.slice()
+      .sort((a,b)=> a.date.split('-').reverse().join('').localeCompare(b.date.split('-').reverse().join('')))
+      .map(f=>`${f.date} [${REASON_LABEL[f.reasonType]||f.reasonType}]: ${f.reason}`).join('\n');
+    return {empCode, name:info.name, designation:info.designation, branch:info.branch, reportingHead:info.reportingHead,
+      state:info.state, empStatus:info.empStatus, total:list.length, p1:counts.p1, p2:counts.p2, p3:counts.p3,
+      gps:counts.gps, rule:counts.rule, detail};
+  });
+  empRows.sort((a,b)=> b.total - a.total);
+  if(!empRows.length){
+    ws6.addRow({empCode:'', name:'Nothing flagged — every record reconciled cleanly this run.'});
+  } else {
+    empRows.forEach(row=>{
+      const r = ws6.addRow(row);
+      r.getCell('total').font={bold:true, color:{argb:'FFFF3B30'}};
+    });
+  }
+  ws6.getColumn('detail').alignment={wrapText:true, vertical:'top'};
+  ws6.autoFilter = {from:'A1', to:'N1'};
+  ws6.views=[{state:'frozen',ySplit:1}];
 
   const buf = await wb.xlsx.writeBuffer();
   const blob = new Blob([buf],{type:'application/octet-stream'});
