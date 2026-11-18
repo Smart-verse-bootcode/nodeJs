@@ -98,7 +98,7 @@ footer{text-align:center;color:#94a3b8;font-size:12px;padding:10px 0 30px}
     <p class="sub">Files are read inside your browser only. Nothing is uploaded to any server.</p>
     <div class="drops">
       <label class="drop" id="dz-breeze"><span class="tag">REQUIRED</span><b>Breeze Attendance Summary Report</b><small>The .xlsx exported from Breeze App for the date range (e.g. 01-10 to 25-10).</small><div class="st"></div><input type="file" accept=".xlsx,.xls" data-k="breeze"></label>
-      <label class="drop" id="dz-master"><span class="tag">REQUIRED</span><b>Employee Master + Holiday Lists</b><small>Employee Master sheet (Name, Company, State) and one holiday sheet per location.</small><div class="st"></div><input type="file" accept=".xlsx,.xls" data-k="master"></label>
+      <label class="drop" id="dz-master"><span class="tag">REQUIRED</span><b>Employee Master + Holiday Lists</b><small>Employee Master sheet (Name, Company, State; optional Emp Code, DOJ, DOL) and one holiday sheet per location.</small><div class="st"></div><input type="file" accept=".xlsx,.xls" data-k="master"></label>
       <label class="drop" id="dz-prev"><span class="tag opt">OPTIONAL</span><b>Previous Month Breeze Report</b><small>Used to auto-calculate the previous month status for days that were paid in advance (e.g. 26-09 to 30-09).</small><div class="st"></div><input type="file" accept=".xlsx,.xls" data-k="prev"></label>
     </div>
     <div id="loadMsg" style="margin-top:14px"></div>
@@ -111,9 +111,9 @@ footer{text-align:center;color:#94a3b8;font-size:12px;padding:10px 0 30px}
     <div class="grid4">
       <div><label class="f">Salary month</label><select id="sMonth"></select></div>
       <div><label class="f">Attendance cut-off</label><select id="sCut"></select><div class="hint" id="cutHint"></div></div>
-      <div><label class="f">Leave (L) is paid?</label><select id="sLeave"><option value="1">Yes — leave counts as payable</option><option value="0">No — deduct every leave day</option></select><div class="hint">Your current salary sheet pays leave (its "Late" column also counts L, so L is cancelled out).</div></div>
-      <div><label class="f">Early Going (EG) deduction</label><select id="sEG"><option value="0">No deduction</option><option value="2">1 day for every 2 EG</option><option value="3">1 day for every 3 EG</option><option value="4">1 day for every 4 EG</option><option value="5">1 day for every 5 EG</option></select></div>
-      <div><label class="f">No Logout (P3) deduction</label><select id="sP3"><option value="0">No deduction</option><option value="2">1 day for every 2 P3</option><option value="3">1 day for every 3 P3</option><option value="4">1 day for every 4 P3</option><option value="5">1 day for every 5 P3</option></select></div>
+      <div><label class="f">Leave (L) is paid?</label><select id="sLeave"><option value="0" selected>No — deduct every leave day</option><option value="1">Yes — leave counts as payable</option></select><div class="hint">Company rule: every leave day is deducted.</div></div>
+      <div><label class="f">Early Going (EG) deduction</label><select id="sEG"><option value="0">No deduction</option><option value="2">1 day for every 2 EG</option><option value="3" selected>1 day for every 3 EG</option><option value="4">1 day for every 4 EG</option><option value="5">1 day for every 5 EG</option></select><div class="hint">Company rule: 3 Early Going = 1 day deducted.</div></div>
+      <div><label class="f">Auto Logout (P3) deduction</label><label class="tg" style="border:1px solid #cbd5e1;border-radius:9px;padding:9px 11px"><input type="checkbox" id="sP3"> Apply: 1 day for every 3 P3</label><div class="hint">Off = No Logout days are only counted, not deducted.</div></div>
     </div>
     <div class="toggles">
       <label class="tg"><input type="checkbox" id="sHide" checked> Hide test IDs (manager, demo)</label>
@@ -299,7 +299,7 @@ footer{text-align:center;color:#94a3b8;font-size:12px;padding:10px 0 30px}
       if (hdrRow > 0 && !master) {
         const ci = n => h.findIndex(x => x === n);
         const codeIdx = h.findIndex(x => /emp(loyee)?\s*(code|id)/.test(x));
-        const c = { name: ci('name'), company: ci('company'), state: ci('state'), phone: h.findIndex(x => x.startsWith('phone') || x.startsWith('mobile')), code: codeIdx, doj: h.findIndex(x => x === 'doj' || x.includes('joining')) };
+        const c = { name: ci('name'), company: ci('company'), state: ci('state'), phone: h.findIndex(x => x.startsWith('phone') || x.startsWith('mobile')), code: codeIdx, doj: h.findIndex(x => x === 'doj' || x.includes('joining')), dol: h.findIndex(x => x === 'dol' || x.includes('leaving') || x.includes('exit') || x.includes('resign')) };
         const list = [];
         for (let r = hdrRow + 1; r <= ws.rowCount; r++) {
           const v = rowVals(ws, r);
@@ -310,6 +310,7 @@ footer{text-align:center;color:#94a3b8;font-size:12px;padding:10px 0 30px}
             phone: c.phone >= 0 ? clean(txt(v[c.phone])) : '',
             code: c.code >= 0 ? clean(txt(v[c.code])).toUpperCase() : '',
             doj: c.doj >= 0 ? parseDateCell(v[c.doj]) : null,
+            dol: c.dol >= 0 ? parseDateCell(v[c.dol]) : null,
             idx: list.length
           });
         }
@@ -460,12 +461,13 @@ footer{text-align:center;color:#94a3b8;font-size:12px;padding:10px 0 30px}
       if (!m && !opts.includeUnmatched) return;
       const locState = m && m.state ? m.state : e.state;
       const hol = holidaysFor(stateKeyFor(locState, e.state, opts));
-      const dol = ns.dol;
+      const dol = (m && m.dol) || ns.dol;
+      const doj = m && m.doj ? m.doj : null;
       const cells = {}; const counts = { WO: 0, H: 0, P: 0, P4: 0, L: 0, HD: 0, EG: 0, AB: 0, OTHER: 0, NA: 0, P3: 0, P5: 0, BLANK: 0 };
       const others = new Set(); let holApplied = 0;
       gridDates.forEach(k => {
         let c = e.days[k] !== undefined ? e.days[k] : '';
-        if (dol && k > dol) c = '-';
+        if ((dol && k > dol) || (doj && k < doj)) c = '-';
         else if (hol[k]) { if (c !== 'H') holApplied++; c = 'H'; }
         cells[k] = c;
         const t = classify(c);
@@ -491,13 +493,16 @@ footer{text-align:center;color:#94a3b8;font-size:12px;padding:10px 0 30px}
         if (dol.slice(0, 7) <= ym) remarks.push('Left on ' + fmtKey(dol));
         else remarks.push('Inactive from ' + fmtKey(dol));
       } else if (inactive) { assumed = 0; remarks.push('Inactive without date — assumed days set to 0, please check'); }
+      if (doj && doj.slice(0, 7) === ym && +doj.slice(8) > cutoff) assumed = Math.max(0, dim - +doj.slice(8) + 1);
+      if (doj && doj.slice(0, 7) > ym) assumed = 0;
+      if (doj && doj.slice(0, 7) === ym) remarks.push('Joined on ' + fmtKey(doj));
       // previous month adjustment
       let prevAdj = 0, prevSeen = 0;
       const pd = prevDays[e.code] || {};
       const phol = holidaysFor(stateKeyFor(locState, e.state, opts));
       prevDates.forEach(k => {
         if (pd[k] === undefined) return;
-        if (dol && k > dol) return;
+        if ((dol && k > dol) || (doj && k < doj)) return;
         let c = pd[k]; if (phol[k]) c = 'H';
         prevSeen++;
         prevAdj += dayValue(classify(c), opts.leavePaid) - 1;
@@ -510,7 +515,7 @@ footer{text-align:center;color:#94a3b8;font-size:12px;padding:10px 0 30px}
       const final = payable + prevAdj + assumed;
       rows.push({
         state: e.state, code: e.code, name: ns.name, head: e.head.replace(/\s+/g, ' ').trim(), desig: e.desig,
-        company: m ? m.company : '', doj: m && m.doj ? m.doj : null, dol, status: inactive ? 'Inactive' : (e.status || 'Active'),
+        company: m ? m.company : '', doj, dol, status: inactive ? 'Inactive' : (e.status || 'Active'),
         location: locState, cells, counts, total, grand, hdDed, lDed, egDed, p3Ded, payable, assumed, prevAdj, prevSeen, final,
         remarks: remarks.join('; '), holApplied, matched: !!m
       });
@@ -776,7 +781,7 @@ footer{text-align:center;color:#94a3b8;font-size:12px;padding:10px 0 30px}
       ['P', 'Present', 'P'], ['AB', 'Absent', 'AB'], ['WO', 'Weekly Off', 'WO'], ['H', 'Holiday (from location holiday list)', 'H'],
       ['L', 'Leave', 'L'], ['HD', 'Half Day', 'HD'], ['EG', 'Early Going', 'EG'], ['P3', 'Present, No Logout', 'P3'],
       ['P5', 'Present, No First Call', 'P5'], ['P4', 'Worked on Week-Off day', 'P4'], ['Any combination', 'e.g. P3EG, EGP3, HDP3, P3HD, P5P3, P4P3, HDEG — the day is counted once by priority AB > HD > EG > L > P4 > WO > H > P. P3 and P5 inside any code are also counted as flags.', 'P5P3'],
-      ['-', 'After date of leaving — not counted', '-']
+      ['-', 'Before date of joining or after date of leaving — not counted', '-']
     ];
     legend.forEach((lg, i) => {
       const row = r + 1 + i;
@@ -791,7 +796,7 @@ footer{text-align:center;color:#94a3b8;font-size:12px;padding:10px 0 30px}
     r = r + legend.length + 2;
     sec(r, 'HOW THE CALCULATION WORKS', C.grpPay);
     const ex = [
-      ['1. Day codes', 'Each date cell is the code from the Breeze report for ' + fmtKey(model.gridDates[0]) + ' to ' + fmtKey(model.gridDates[nD - 1]) + '. On a holiday of the employee\'s location (holiday list from the Master file, state taken from Employee Master) the code is replaced with H. After the date of leaving the cell shows "-".'],
+      ['1. Day codes', 'Each date cell is the code from the Breeze report for ' + fmtKey(model.gridDates[0]) + ' to ' + fmtKey(model.gridDates[nD - 1]) + '. On a holiday of the employee\'s location (holiday list from the Master file, state taken from Employee Master) the code is replaced with H. Before the date of joining (DOJ from Employee Master) and after the date of leaving (DOL from Employee Master, else the "INACTIVE- date" in the Breeze name) the cell shows "-" and is not counted.'],
       ['2. Day Count', 'Every day is counted once, also for combined codes, by priority: Absent (AB) > Half Day (HD) > Early Going (EG) > Leave (L) > WO Worked (P4) > WO > Holiday (H) > Present (any other code with P). Example: P3EG = Early Going, HDP3 = Half Day, P5P3 = Present. TOTAL = sum of these; Grand Total = filled days. If they differ the TOTAL cell turns red (unknown code).'],
       ['3. Flags', 'No Logout (P3) and No First Call (P5) are counted wherever they appear, inside any combination (P3EG, HDP3, P5P3...). They do not change the day type; they only drive the Auto Logout Deduction rule.'],
       ['4. Deductions', 'Half Day Deduction = Half Day × 0.5.   Leave Deduction = Leave Taken if rule "Leave is paid" = No, else 0.   Early Going Deduction = INT(Early Going ÷ rule value).   Auto Logout Deduction = INT(No Logout ÷ rule value).'],
@@ -934,7 +939,7 @@ $('#flt').addEventListener('click', e => { const b=e.target.closest('button'); i
 function opts(){
   const ym = $('#sMonth').value;
   return { year:+ym.slice(0,4), month:+ym.slice(5), cutoff:+$('#sCut').value, leavePaid:$('#sLeave').value==='1',
-    egN:+$('#sEG').value, p3N:+$('#sP3').value, hideTest:$('#sHide').checked, includeUnmatched:$('#sUnm').checked,
+    egN:+$('#sEG').value, p3N:$('#sP3').checked ? 3 : 0, hideTest:$('#sHide').checked, includeUnmatched:$('#sUnm').checked,
     prevBreeze:S.prev, holidayMap:S.holMap, matches:S.matches, matchInfo:S.matchInfo };
 }
 
@@ -1047,7 +1052,7 @@ function renderNotes(){
     '<div class="kpi '+(att?'warn':'good')+'"><div class="l">Needs attention</div><div class="v">'+att+'</div></div>'+
     '<div class="kpi"><div class="l">Inactive / left</div><div class="v">'+rows.filter(r=>r.status==='Inactive').length+'</div></div>'+
     '<div class="kpi good"><div class="l">Total final payable days</div><div class="v">'+n(fin)+'</div></div>';
-  const lg = [['P','Present'],['AB','Absent'],['WO','Weekly Off'],['H','Holiday'],['L','Leave'],['HD','Half Day'],['EG','Early Going'],['P3','Present with flag (P3 / P5)'],['P4','Worked on WO'],['-','After leaving']];
+  const lg = [['P','Present'],['AB','Absent'],['WO','Weekly Off'],['H','Holiday'],['L','Leave'],['HD','Half Day'],['EG','Early Going'],['P3','Present with flag (P3 / P5)'],['P4','Worked on WO'],['-','Before joining / after leaving']];
   $('#legend').innerHTML = lg.map(([c,t])=>{const s=A.codeStyle(c);return '<span><i style="background:'+hex(s.bg)+';color:'+hex(s.fg)+'">'+c+'</i>'+t+'</span>';}).join('');
 }
 
