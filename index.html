@@ -1,1804 +1,1077 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Smartverse — Attendance Audit Desk</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Attendance Builder — Breeze to Salary Sheet</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <style>
-:root{
-  --bg:#ffffff;
-  --surface:#ffffff;
-  --surface-2:#f5f5f7;
-  --surface-3:#eaeaef;
-  --line:#dcdce1;
-  --text:#1d1d1f;
-  --muted:#6e6e73;
-  --muted-2:#98989d;
-  --amber:#000000;
-  --amber-dim:#0000000d;
-  --green:#1d1d1f;
-  --green-dim:#0000000a;
-  --blue:#48484a;
-  --blue-dim:#48484a14;
-  --red:#ff3b30;
-  --red-dim:#ff3b301a;
-  --grey:#86868b;
-  --grey-dim:#86868b14;
-  --radius:14px;
-  --shadow: 0 10px 34px rgba(0,0,0,0.08);
-}
-*{box-sizing:border-box;}
-html,body{margin:0;padding:0;}
-body{
-  background:
-    radial-gradient(1100px 480px at 88% -8%, #f5f5f7 0%, transparent 62%),
-    var(--bg);
-  color:var(--text);
-  font-family:-apple-system,BlinkMacSystemFont,'Inter','Helvetica Neue',Arial,sans-serif;
-  min-height:100vh;
-  -webkit-font-smoothing:antialiased;
-}
-.mono{font-family:ui-monospace,'SF Mono','IBM Plex Mono',monospace;}
-.display{font-family:-apple-system,BlinkMacSystemFont,'Inter','Helvetica Neue',Arial,sans-serif;letter-spacing:-0.02em;}
-
-/* ===== Shell ===== */
-.shell{display:grid;grid-template-columns:220px 1fr;min-height:100vh;}
-@media (max-width:860px){.shell{grid-template-columns:1fr;} .rail{position:sticky;top:0;z-index:20;}}
-
-.rail{
-  background:var(--surface);
-  border-right:1px solid var(--line);
-  padding:22px 16px;
-  display:flex;flex-direction:column;gap:26px;
-}
-@media (max-width:860px){.rail{border-right:none;border-bottom:1px solid var(--line);flex-direction:row;align-items:center;justify-content:space-between;padding:14px 16px;}}
-
-.brand{display:flex;align-items:center;gap:10px;}
-.brand-mark{
-  width:32px;height:32px;border-radius:9px;
-  background:linear-gradient(160deg,#2c2c2e,#000000);
-  display:flex;align-items:center;justify-content:center;
-  font-family:-apple-system,BlinkMacSystemFont,'Inter','Helvetica Neue',Arial,sans-serif;font-weight:700;color:#ffffff;font-size:14px;
-  box-shadow:0 6px 16px rgba(0,0,0,0.22);
-  flex-shrink:0;
-}
-.brand-name{font-family:-apple-system,BlinkMacSystemFont,'Inter','Helvetica Neue',Arial,sans-serif;font-weight:700;font-size:16.5px;letter-spacing:0.2px;}
-.brand-sub{font-size:10.5px;color:var(--muted-2);letter-spacing:1.2px;text-transform:uppercase;margin-top:1px;}
-
-.steps{display:flex;flex-direction:column;gap:4px;}
-@media (max-width:860px){.steps{flex-direction:row;gap:6px;}}
-.step-btn{
-  display:flex;align-items:center;gap:10px;
-  padding:10px 12px;border-radius:8px;border:none;background:transparent;
-  color:var(--muted);font-size:13.5px;font-weight:500;cursor:pointer;text-align:left;
-  transition:background .15s, color .15s;
-}
-.step-btn:hover{background:var(--surface-2);color:var(--text);}
-.step-btn.active{background:var(--surface-3);color:var(--text);}
-.step-btn .num{
-  font-family:ui-monospace,'SF Mono','IBM Plex Mono',monospace;font-size:10.5px;color:var(--muted-2);
-  width:18px;height:18px;border-radius:5px;border:1px solid var(--line);
-  display:flex;align-items:center;justify-content:center;flex-shrink:0;
-}
-.step-btn.active .num{border-color:var(--amber);color:var(--amber);}
-.step-btn.done .num{background:var(--green-dim);border-color:var(--green);color:var(--green);}
-@media (max-width:860px){.step-btn span.label{display:none;} .step-btn{padding:8px;}}
-
-.rail-foot{margin-top:auto;font-size:11px;color:var(--muted-2);line-height:1.5;}
-@media (max-width:860px){.rail-foot{display:none;}}
-
-.main{padding:28px 32px 60px;max-width:1180px;}
-@media (max-width:600px){.main{padding:18px 16px 40px;}}
-
-.page-head{margin-bottom:22px;}
-.eyebrow{font-family:ui-monospace,'SF Mono','IBM Plex Mono',monospace;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--amber);margin-bottom:6px;}
-h1{font-family:-apple-system,BlinkMacSystemFont,'Inter','Helvetica Neue',Arial,sans-serif;font-size:26px;font-weight:700;margin:0 0 6px;}
-.subtitle{color:var(--muted);font-size:14px;line-height:1.5;max-width:640px;}
-
-.panel{
-  background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
-  padding:22px;margin-bottom:18px;
-}
-.panel-title{font-family:-apple-system,BlinkMacSystemFont,'Inter','Helvetica Neue',Arial,sans-serif;font-weight:600;font-size:15px;margin:0 0 4px;display:flex;align-items:center;gap:8px;}
-.panel-desc{color:var(--muted);font-size:12.5px;margin:0 0 16px;}
-
-/* ===== Upload ===== */
-.upload-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
-@media (max-width:700px){.upload-grid{grid-template-columns:1fr;}}
-.drop{
-  border:1.5px dashed var(--line);border-radius:10px;padding:22px;
-  display:flex;flex-direction:column;align-items:flex-start;gap:8px;
-  background:var(--surface-2);cursor:pointer;transition:border-color .15s, background .15s;
-  position:relative;
-}
-.drop:hover{border-color:var(--amber);background:var(--surface-3);}
-.drop.filled{border-style:solid;border-color:var(--green);background:var(--green-dim);}
-.drop input{position:absolute;inset:0;opacity:0;cursor:pointer;}
-.drop-icon{font-size:20px;}
-.drop-label{font-weight:600;font-size:13.5px;}
-.drop-hint{font-size:11.5px;color:var(--muted);}
-.drop-file{font-family:ui-monospace,'SF Mono','IBM Plex Mono',monospace;font-size:11.5px;color:var(--green);word-break:break-all;}
-
-/* ===== Rules table ===== */
-.rules-table-wrap{overflow-x:auto;border-radius:8px;border:1px solid var(--line);}
-table.rules{width:100%;border-collapse:collapse;font-size:12.5px;min-width:920px;}
-table.rules th{
-  background:var(--surface-3);color:var(--muted);text-align:left;
-  padding:9px 10px;font-weight:600;font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;
-  border-bottom:1px solid var(--line);white-space:nowrap;
-}
-table.rules td{padding:5px 6px;border-bottom:1px solid var(--line);vertical-align:middle;}
-table.rules tr:last-child td{border-bottom:none;}
-table.rules input, table.rules select{
-  width:100%;background:var(--surface-2);border:1px solid var(--line);color:var(--text);
-  border-radius:6px;padding:6px 8px;font-size:12px;font-family:ui-monospace,'SF Mono','IBM Plex Mono',monospace;
-}
-table.rules input:focus, table.rules select:focus{outline:none;border-color:var(--amber);}
-.row-del{
-  background:none;border:1px solid var(--line);color:var(--muted);border-radius:6px;
-  width:26px;height:26px;cursor:pointer;font-size:13px;line-height:1;
-}
-.row-del:hover{border-color:var(--red);color:var(--red);}
-
-.btn-row{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;}
-.btn{
-  font-family:-apple-system,BlinkMacSystemFont,'Inter','Helvetica Neue',Arial,sans-serif;font-weight:600;font-size:13px;padding:10px 18px;border-radius:980px;
-  border:1px solid var(--line);background:var(--surface-2);color:var(--text);cursor:pointer;
-  display:inline-flex;align-items:center;gap:7px;transition:transform .15s, filter .15s, background .15s;
-}
-.btn:hover{border-color:var(--muted);transform:translateY(-1px);}
-.btn:active{transform:translateY(0) scale(.98);}
-.btn-primary{background:linear-gradient(160deg,#2c2c2e,#000000);border-color:transparent;color:#ffffff;box-shadow:0 6px 16px rgba(0,0,0,0.18);}
-.btn-primary:hover{filter:brightness(1.3);}
-.btn-primary:disabled{opacity:.35;cursor:not-allowed;filter:none;transform:none;}
-.btn-ghost{background:transparent;}
-.btn-sm{padding:7px 13px;font-size:12px;}
-
-/* ===== Settings inline ===== */
-.settings-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-top:14px;}
-.field label{display:block;font-size:11px;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;}
-.field input{
-  width:100%;background:var(--surface-2);border:1px solid var(--line);color:var(--text);
-  border-radius:8px;padding:9px 11px;font-family:ui-monospace,'SF Mono','IBM Plex Mono',monospace;font-size:13px;
-}
-
-/* ===== KPIs ===== */
-.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:12px;margin-bottom:20px;}
-@media (max-width:900px){.kpi-grid{grid-template-columns:repeat(3,1fr);}}
-@media (max-width:520px){.kpi-grid{grid-template-columns:repeat(2,1fr);}}
-.kpi{
-  background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 14px 12px;
-}
-.kpi-val{font-family:-apple-system,BlinkMacSystemFont,'Inter','Helvetica Neue',Arial,sans-serif;font-size:24px;font-weight:700;line-height:1;}
-.kpi-label{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-top:6px;}
-.kpi.amber .kpi-val{color:var(--red);}
-.kpi.green .kpi-val{color:var(--green);}
-.kpi.blue .kpi-val{color:var(--blue);}
-.kpi.red .kpi-val{color:var(--red);}
-
-/* ===== Ticker (signature element) ===== */
-.ticker-wrap{
-  border:1px solid var(--line);border-radius:10px;background:var(--surface);
-  overflow:hidden;margin-bottom:20px;position:relative;
-}
-.ticker-head{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:11px 16px;border-bottom:1px solid var(--line);background:var(--surface-2);
-}
-.ticker-title{font-family:ui-monospace,'SF Mono','IBM Plex Mono',monospace;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--amber);display:flex;align-items:center;gap:8px;}
-.dot{width:7px;height:7px;border-radius:50%;background:var(--red);animation:pulse 1.8s infinite;}
-@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.35;}}
-.ticker-track{display:flex;overflow-x:auto;gap:0;}
-.ticker-item{
-  min-width:230px;padding:12px 16px;border-right:1px solid var(--line);flex-shrink:0;
-}
-.ticker-item .t-emp{font-family:ui-monospace,'SF Mono','IBM Plex Mono',monospace;font-size:12.5px;font-weight:600;}
-.ticker-item .t-reason{font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.4;}
-.ticker-empty{padding:20px 16px;color:var(--muted);font-size:12.5px;}
-
-/* ===== Filters + Flag table ===== */
-.filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;}
-.filters select, .filters input{
-  background:var(--surface-2);border:1px solid var(--line);color:var(--text);
-  border-radius:8px;padding:8px 10px;font-size:12.5px;font-family:'Inter';
-}
-.table-wrap{overflow-x:auto;border-radius:8px;border:1px solid var(--line);}
-table.flags{width:100%;border-collapse:collapse;font-size:12.5px;min-width:900px;}
-table.flags th{
-  background:var(--surface-3);color:var(--muted);text-align:left;padding:10px;
-  font-weight:600;font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;
-  border-bottom:1px solid var(--line);white-space:nowrap;position:sticky;top:0;
-}
-table.flags td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top;}
-table.flags tr:hover td{background:var(--surface-2);}
-.badge{
-  display:inline-block;padding:2px 8px;border-radius:20px;font-size:10.5px;font-weight:700;
-  font-family:ui-monospace,'SF Mono','IBM Plex Mono',monospace;letter-spacing:.3px;
-}
-.badge.P{background:var(--green-dim);color:var(--green);}
-.badge.HD{background:var(--blue-dim);color:var(--blue);}
-.badge.AB{background:var(--red-dim);color:var(--red);}
-.badge.WO{background:var(--grey-dim);color:var(--grey);}
-.badge.P1,.badge.P2,.badge.P3{background:var(--red-dim);color:var(--red);}
-.sev{
-  display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--red);
-}
-.empty-state{padding:40px 20px;text-align:center;color:var(--muted);}
-.empty-state .big{font-size:30px;margin-bottom:8px;}
-
-/* ===== Export page ===== */
-.export-list{display:flex;flex-direction:column;gap:10px;margin-bottom:18px;}
-.export-item{
-  display:flex;align-items:flex-start;gap:12px;padding:13px 14px;
-  border:1px solid var(--line);border-radius:9px;background:var(--surface-2);
-}
-.export-item .num{
-  font-family:ui-monospace,'SF Mono','IBM Plex Mono',monospace;font-size:11px;color:var(--amber);border:1px solid var(--line);
-  width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;
-}
-.export-item h4{margin:0 0 3px;font-size:13.5px;font-family:-apple-system,BlinkMacSystemFont,'Inter','Helvetica Neue',Arial,sans-serif;font-weight:600;}
-.export-item p{margin:0;font-size:12px;color:var(--muted);line-height:1.5;}
-
-.toast{
-  position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(8px) scale(.96);
-  background:rgba(29,29,31,0.92);backdrop-filter:blur(12px);color:#ffffff;
-  padding:12px 20px;border-radius:980px;font-size:13px;font-weight:500;box-shadow:0 12px 30px rgba(0,0,0,0.25);
-  opacity:0;pointer-events:none;transition:opacity .3s cubic-bezier(.2,.8,.2,1), transform .3s cubic-bezier(.2,.8,.2,1);z-index:200;
-}
-.toast.show{opacity:1;transform:translateX(-50%) translateY(-6px) scale(1);}
-
-.hint{font-size:11.5px;color:var(--muted-2);margin-top:10px;line-height:1.5;}
-.hidden{display:none !important;}
-
-/* ===== Toggle switch ===== */
-.toggle-row{display:flex;align-items:center;gap:12px;cursor:pointer;user-select:none;}
-.toggle-switch{position:relative;width:44px;height:26px;flex-shrink:0;}
-.toggle-switch input{position:absolute;opacity:0;width:100%;height:100%;margin:0;cursor:pointer;}
-.toggle-slider{
-  position:absolute;inset:0;border-radius:999px;background:var(--surface-3);border:1px solid var(--line);
-  transition:background .2s;
-}
-.toggle-slider::before{
-  content:'';position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;
-  background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.25);transition:transform .2s;
-}
-.toggle-switch input:checked + .toggle-slider{background:#1d1d1f;border-color:#1d1d1f;}
-.toggle-switch input:checked + .toggle-slider::before{transform:translateX(18px);}
-.toggle-label{font-size:13px;font-weight:500;}
-
-.badge.NA{background:var(--grey-dim);color:var(--muted-2);}
-.badge.INACTIVE{background:var(--grey-dim);color:var(--muted-2);}
-
-/* ===== Entrance animation ===== */
-@keyframes fadeInUp{
-  from{opacity:0;transform:translateY(14px);}
-  to{opacity:1;transform:translateY(0);}
-}
-.rail{animation:fadeInUp .5s cubic-bezier(.2,.8,.2,1) both;}
-.page-head{animation:fadeInUp .55s cubic-bezier(.2,.8,.2,1) both;}
-.panel, .kpi-grid, .ticker-wrap{animation:fadeInUp .6s cubic-bezier(.2,.8,.2,1) both;}
-.panel:nth-of-type(1){animation-delay:.05s;}
-.panel:nth-of-type(2){animation-delay:.12s;}
-.panel:nth-of-type(3){animation-delay:.19s;}
-.panel:nth-of-type(4){animation-delay:.26s;}
-.kpi-grid{animation-delay:.05s;}
-.ticker-wrap{animation-delay:.12s;}
-.kpi{animation:fadeInUp .5s cubic-bezier(.2,.8,.2,1) both;}
-.kpi:nth-child(1){animation-delay:.06s;} .kpi:nth-child(2){animation-delay:.1s;}
-.kpi:nth-child(3){animation-delay:.14s;} .kpi:nth-child(4){animation-delay:.18s;}
-.kpi:nth-child(5){animation-delay:.22s;} .kpi:nth-child(6){animation-delay:.26s;}
-@media (prefers-reduced-motion: reduce){
-  .rail,.page-head,.panel,.kpi-grid,.ticker-wrap,.kpi{animation:none;}
-}
-
-/* ===== Loading overlay ===== */
-.loader-overlay{
-  position:fixed;inset:0;z-index:500;
-  background:rgba(255,255,255,0.72);backdrop-filter:blur(6px);
-  display:flex;align-items:center;justify-content:center;
-  opacity:0;pointer-events:none;transition:opacity .28s ease;
-}
-.loader-overlay.show{opacity:1;pointer-events:all;}
-.loader-card{
-  background:rgba(255,255,255,0.9);border:1px solid var(--line);border-radius:20px;
-  padding:34px 44px;box-shadow:0 20px 60px rgba(0,0,0,0.14);
-  display:flex;flex-direction:column;align-items:center;gap:16px;
-  transform:scale(.94);transition:transform .28s cubic-bezier(.2,.8,.2,1);
-}
-.loader-overlay.show .loader-card{transform:scale(1);}
-.orbit{position:relative;width:52px;height:52px;}
-.orbit span{
-  position:absolute;top:0;left:50%;width:8px;height:8px;margin-left:-4px;
-  border-radius:50%;background:#1d1d1f;
-  animation:orbit 1.15s cubic-bezier(.5,0,.5,1) infinite;
-  transform-origin:4px 26px;
-}
-.orbit span:nth-child(1){animation-delay:0s; opacity:1;}
-.orbit span:nth-child(2){animation-delay:-0.29s; opacity:.75;}
-.orbit span:nth-child(3){animation-delay:-0.58s; opacity:.5;}
-.orbit span:nth-child(4){animation-delay:-0.86s; opacity:.28;}
-@keyframes orbit{
-  from{transform:rotate(0deg) translateY(0);}
-  to{transform:rotate(360deg) translateY(0);}
-}
-.loader-text{font-size:13.5px;font-weight:600;color:var(--text);}
-.loader-sub{font-size:11.5px;color:var(--muted);margin-top:-8px;}
-@media (prefers-reduced-motion: reduce){
-  .orbit span{animation:pulse 1.4s ease infinite;}
-}
-textarea.email-box{
-  width:100%;min-height:180px;background:var(--surface-2);border:1px solid var(--line);
-  color:var(--text);border-radius:8px;padding:12px;font-family:ui-monospace,'SF Mono','IBM Plex Mono',monospace;font-size:12px;
-  line-height:1.6;resize:vertical;
-}
+:root{--navy:#0f2744;--navy2:#1e3a5f;--ink:#111827;--mute:#64748b;--line:#e2e8f0;--bg:#f4f6fa;--card:#fff;--blue:#1d4ed8;--green:#047857;--red:#b91c1c;--amber:#b45309;--violet:#6d28d9;--r:14px}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:14px}
+header{background:linear-gradient(120deg,#0b1d35,#16365c 60%,#1d4e7e);color:#fff;padding:26px 32px 64px}
+.brand{display:flex;align-items:center;gap:14px}
+.logo{width:42px;height:42px;border-radius:11px;background:rgba(255,255,255,.12);display:grid;place-items:center;border:1px solid rgba(255,255,255,.2)}
+h1{margin:0;font-size:22px;font-weight:800;letter-spacing:-.01em}
+header p{margin:4px 0 0;color:#b8c7dc;font-size:13px}
+main{max-width:1280px;margin:-44px auto 40px;padding:0 20px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:0 1px 2px rgba(15,39,68,.04),0 8px 24px rgba(15,39,68,.06);padding:22px;margin-bottom:18px}
+.card h2{margin:0 0 4px;font-size:16px;font-weight:700;display:flex;align-items:center;gap:10px}
+.step{width:24px;height:24px;border-radius:50%;background:var(--navy);color:#fff;font-size:12px;display:inline-grid;place-items:center;font-weight:700}
+.sub{color:var(--mute);font-size:13px;margin:0 0 16px}
+.drops{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.drop{border:1.5px dashed #c5d0de;border-radius:12px;padding:18px;cursor:pointer;transition:.15s;background:#fafcff;position:relative;min-height:118px}
+.drop:hover,.drop.over{border-color:var(--blue);background:#f1f6ff}
+.drop.ok{border-style:solid;border-color:#86efac;background:#f0fdf4}
+.drop.err{border-color:#fca5a5;background:#fef2f2}
+.drop b{display:block;font-size:14px;margin-bottom:3px}
+.drop small{color:var(--mute);font-size:12px;line-height:1.5;display:block}
+.drop .tag{position:absolute;top:12px;right:12px;font-size:10px;font-weight:700;letter-spacing:.04em;padding:3px 7px;border-radius:20px;background:#e0e7ff;color:#3730a3}
+.drop .tag.opt{background:#f1f5f9;color:#64748b}
+.drop .st{margin-top:10px;font-size:12px;font-weight:600}
+.drop.ok .st{color:var(--green)}.drop.err .st{color:var(--red)}
+input[type=file]{display:none}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+label.f{display:block;font-size:12px;font-weight:600;color:#334155;margin-bottom:6px}
+select,input[type=search]{width:100%;padding:9px 11px;border:1px solid #cbd5e1;border-radius:9px;font:inherit;background:#fff;color:var(--ink)}
+select:focus,input:focus{outline:2px solid #bfdbfe;border-color:var(--blue)}
+.hint{font-size:11.5px;color:var(--mute);margin-top:5px;line-height:1.45}
+.toggles{display:flex;gap:22px;margin-top:16px;flex-wrap:wrap}
+.tg{display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer}
+.tg input{width:16px;height:16px;accent-color:var(--navy)}
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:16px}
+.kpi{border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:linear-gradient(180deg,#fff,#f8fafc)}
+.kpi .v{font-size:24px;font-weight:800;letter-spacing:-.02em}
+.kpi .l{font-size:11.5px;color:var(--mute);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.kpi.warn .v{color:var(--amber)}.kpi.good .v{color:var(--green)}
+table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
+th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#475569;background:#f1f5f9;padding:9px 10px;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:1;white-space:nowrap}
+td{padding:8px 10px;border-bottom:1px solid #eef2f7;vertical-align:middle}
+tr:hover td{background:#fafcff}
+.tbl{max-height:560px;overflow:auto;border:1px solid var(--line);border-radius:12px}
+.num{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.badge{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:20px;white-space:nowrap}
+.b-red{background:#fee2e2;color:#991b1b}.b-amb{background:#fef3c7;color:#92400e}.b-grn{background:#dcfce7;color:#166534}.b-blu{background:#dbeafe;color:#1e40af}.b-gry{background:#f1f5f9;color:#475569}
+.strip{display:flex;gap:2px}
+.strip i{width:15px;height:20px;border-radius:3px;display:grid;place-items:center;font-style:normal;font-size:8px;font-weight:700;font-family:'JetBrains Mono',monospace}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-size:11.5px;padding:3px 9px;border-radius:20px;background:#fef3c7;color:#92400e;font-weight:600}
+.legend{display:flex;flex-wrap:wrap;gap:10px;margin:4px 0 14px}
+.legend span{display:flex;align-items:center;gap:6px;font-size:12px;color:#334155}
+.legend i{font-style:normal;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px}
+.bar{display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+.bar input{max-width:280px}
+.seg{display:flex;border:1px solid #cbd5e1;border-radius:9px;overflow:hidden}
+.seg button{border:0;background:#fff;padding:8px 12px;font:inherit;font-size:12.5px;cursor:pointer;color:#334155;border-right:1px solid #e2e8f0}
+.seg button:last-child{border-right:0}
+.seg button.on{background:var(--navy);color:#fff}
+.btn{border:0;border-radius:10px;padding:12px 20px;font:inherit;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:9px}
+.btn.pri{background:linear-gradient(180deg,#0f7a55,#047857);color:#fff;box-shadow:0 4px 14px rgba(4,120,87,.3)}
+.btn.pri:hover{filter:brightness(1.07)}.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.sec{background:#fff;border:1px solid #cbd5e1;color:var(--ink);padding:7px 12px;font-size:12px}
+.exp{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.notice{border-radius:10px;padding:11px 14px;font-size:13px;margin-bottom:10px;line-height:1.5}
+.n-info{background:#eff6ff;color:#1e3a8a;border:1px solid #bfdbfe}
+.n-warn{background:#fffbeb;color:#78350f;border:1px solid #fde68a}
+.n-err{background:#fef2f2;color:#7f1d1d;border:1px solid #fecaca}
+.hidden{display:none!important}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#0f172a;color:#fff;padding:11px 18px;border-radius:10px;font-size:13px;box-shadow:0 10px 30px rgba(0,0,0,.25);z-index:9;transition:.25s}
+.mono{font-family:'JetBrains Mono',monospace;font-size:12px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+footer{text-align:center;color:#94a3b8;font-size:12px;padding:10px 0 30px}
+@media(max-width:900px){.drops,.grid4,.kpis,.two{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
-<div class="shell">
-  <div class="rail">
-    <div class="brand">
-      <div class="brand-mark">SV</div>
-      <div>
-        <div class="brand-name">Smartverse</div>
-        <div class="brand-sub">Attendance Audit Desk</div>
-      </div>
+<header>
+  <div class="brand">
+    <div class="logo"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M8 2v4M16 2v4M3 10h18M8 15l2.5 2.5L16 13"/></svg></div>
+    <div><h1>Attendance Builder</h1><p>Breeze Attendance Summary Report → salary-ready Payroll Attendance Register with holidays, deductions and payable days</p></div>
+  </div>
+</header>
+<main>
+  <section class="card">
+    <h2><span class="step">1</span>Upload files</h2>
+    <p class="sub">Files are read inside your browser only. Nothing is uploaded to any server.</p>
+    <div class="drops">
+      <label class="drop" id="dz-breeze"><span class="tag">REQUIRED</span><b>Breeze Attendance Summary Report</b><small>The .xlsx exported from Breeze App for the date range (e.g. 01-10 to 25-10).</small><div class="st"></div><input type="file" accept=".xlsx,.xls" data-k="breeze"></label>
+      <label class="drop" id="dz-master"><span class="tag">REQUIRED</span><b>Employee Master + Holiday Lists</b><small>Employee Master sheet (Name, Company, State) and one holiday sheet per location.</small><div class="st"></div><input type="file" accept=".xlsx,.xls" data-k="master"></label>
+      <label class="drop" id="dz-prev"><span class="tag opt">OPTIONAL</span><b>Previous Month Breeze Report</b><small>Used to auto-calculate the previous month status for days that were paid in advance (e.g. 26-09 to 30-09).</small><div class="st"></div><input type="file" accept=".xlsx,.xls" data-k="prev"></label>
     </div>
-    <div class="steps">
-      <button class="step-btn active" data-step="upload"><span class="num">1</span><span class="label">Upload &amp; Rules</span></button>
-      <button class="step-btn" data-step="dashboard"><span class="num">2</span><span class="label">Audit Dashboard</span></button>
-      <button class="step-btn" data-step="export"><span class="num">3</span><span class="label">Export</span></button>
+    <div id="loadMsg" style="margin-top:14px"></div>
+  </section>
+
+  <div id="work" class="hidden">
+  <section class="card">
+    <h2><span class="step">2</span>Payroll settings</h2>
+    <p class="sub">These rules are also written into the Excel file as editable yellow cells, so formulas can be changed later too.</p>
+    <div class="grid4">
+      <div><label class="f">Salary month</label><select id="sMonth"></select></div>
+      <div><label class="f">Attendance cut-off</label><select id="sCut"></select><div class="hint" id="cutHint"></div></div>
+      <div><label class="f">Leave (L) is paid?</label><select id="sLeave"><option value="1">Yes — leave counts as payable</option><option value="0">No — deduct every leave day</option></select><div class="hint">Your current salary sheet pays leave (its "Late" column also counts L, so L is cancelled out).</div></div>
+      <div><label class="f">Early Going (EG) deduction</label><select id="sEG"><option value="0">No deduction</option><option value="2">1 day for every 2 EG</option><option value="3">1 day for every 3 EG</option><option value="4">1 day for every 4 EG</option><option value="5">1 day for every 5 EG</option></select></div>
+      <div><label class="f">No Logout (P3) deduction</label><select id="sP3"><option value="0">No deduction</option><option value="2">1 day for every 2 P3</option><option value="3">1 day for every 3 P3</option><option value="4">1 day for every 4 P3</option><option value="5">1 day for every 5 P3</option></select></div>
     </div>
-    <div class="rail-foot">Raw reports and GPS logs are processed only in this browser tab — nothing is uploaded anywhere.</div>
+    <div class="toggles">
+      <label class="tg"><input type="checkbox" id="sHide" checked> Hide test IDs (manager, demo)</label>
+      <label class="tg"><input type="checkbox" id="sUnm" checked> Include employees not found in Employee Master</label>
+    </div>
+  </section>
+
+  <div class="two">
+  <section class="card">
+    <h2><span class="step">3</span>Holiday calendar by location</h2>
+    <p class="sub">Location is taken from the Employee Master state. Holiday dates are marked <b>H</b> in the sheet.</p>
+    <div id="holWarn"></div>
+    <div class="tbl" style="max-height:360px"><table><thead><tr><th>Location</th><th>Employees</th><th style="width:44%">Holiday list</th><th>Holidays in period</th></tr></thead><tbody id="holBody"></tbody></table></div>
+  </section>
+  <section class="card">
+    <h2><span class="step">4</span>Name match review</h2>
+    <p class="sub">Breeze has no link to the master except the name. Check the rows below — exact matches are not shown.</p>
+    <div class="tbl" style="max-height:360px"><table><thead><tr><th>Breeze employee</th><th style="width:52%">Employee Master</th></tr></thead><tbody id="mBody"></tbody></table></div>
+  </section>
   </div>
 
-  <div class="main">
-
-    <!-- ============ STEP 1: UPLOAD & RULES ============ -->
-    <section id="page-upload">
-      <div class="page-head">
-        <div class="eyebrow">Step 1</div>
-        <h1>Upload &amp; Rules</h1>
-        <div class="subtitle">Drop in this cycle's raw files. Smartverse reshapes and joins them itself — Emp Code, Login ID and Name are used to match records across files — then applies the rules below automatically.</div>
-      </div>
-
-      <div class="panel">
-        <div class="panel-title">📥 Source files</div>
-        <div class="panel-desc">Daily Performance Report is required (it's the attendance spine). Users, Employee Master and the Activity log are optional — each adds one more layer: designation &amp; active status, reporting head, and GPS/State verification respectively.</div>
-        <div class="upload-grid">
-          <label class="drop" id="dropDPR">
-            <input type="file" id="fileDPR" accept=".xlsx,.xls" />
-            <div class="drop-icon">📅</div>
-            <div class="drop-label">Daily Performance Report of Sales Personnel</div>
-            <div class="drop-hint">.xlsx — wide, one row per employee with repeating date blocks. Reshaped automatically.</div>
-            <div class="drop-file" id="fileDPRName"></div>
-          </label>
-          <label class="drop" id="dropUsers">
-            <input type="file" id="fileUsers" accept=".xlsx,.xls" />
-            <div class="drop-icon">👤</div>
-            <div class="drop-label">Users <span style="color:var(--muted-2);font-weight:400;">(optional)</span></div>
-            <div class="drop-hint">.xls/.xlsx — supplies Designation &amp; active/inactive Status, matched by Login ID</div>
-            <div class="drop-file" id="fileUsersName"></div>
-          </label>
-          <label class="drop" id="dropMaster">
-            <input type="file" id="fileMaster" accept=".xlsx,.xls" />
-            <div class="drop-icon">🗂️</div>
-            <div class="drop-label">Employee Master <span style="color:var(--muted-2);font-weight:400;">(optional)</span></div>
-            <div class="drop-hint">.xls/.xlsx — supplies Reporting Head, matched by Emp Code</div>
-            <div class="drop-file" id="fileMasterName"></div>
-          </label>
-          <label class="drop" id="dropAct">
-            <input type="file" id="fileAct" accept=".xlsx,.xls" />
-            <div class="drop-icon">📍</div>
-            <div class="drop-label">Employee Activity / GPS Log <span style="color:var(--muted-2);font-weight:400;">(optional)</span></div>
-            <div class="drop-hint">.xlsx — visit pings for field-presence verification; also supplies State</div>
-            <div class="drop-file" id="fileActName"></div>
-          </label>
-        </div>
-        <div class="hint" id="detectHint"></div>
-      </div>
-
-      <div class="panel">
-        <div class="panel-title">⚙️ Attendance Rules — by designation</div>
-        <div class="panel-desc">Full Day / Half Day / Absent are hour thresholds; Early Going is flagged as a note, not a separate status. Ranges accept plain text like "4.5 to 8" or "*" for none.</div>
-        <div class="rules-table-wrap">
-          <table class="rules" id="rulesTable">
-            <thead>
-              <tr>
-                <th style="width:26px"></th>
-                <th>Designation</th>
-                <th>Timing Method</th>
-                <th>Full Day ≥ (hrs)</th>
-                <th>Half Day range</th>
-                <th>Early Going range</th>
-                <th>Absent below (hrs)</th>
-                <th>Note</th>
-                <th style="width:30px"></th>
-              </tr>
-            </thead>
-            <tbody id="rulesBody"></tbody>
-          </table>
-        </div>
-        <div class="btn-row">
-          <button class="btn btn-sm" id="btnAddRule">+ Add designation</button>
-          <button class="btn btn-sm btn-ghost" id="btnResetRules">Reset to defaults</button>
-        </div>
-      </div>
-
-      <div class="panel">
-        <div class="panel-title">🧭 Beat Coverage &amp; Market Working Rules</div>
-        <div class="panel-desc">Ensures beat compliance and minimum field time. Refines a "Present" day into P / P1 / P2 / P3 — P1 = worked outside the beat radius, P2 = minimum market hours not met, P3 = no manual logout recorded.</div>
-        <div class="settings-grid" style="margin-top:0;margin-bottom:16px;">
-          <div class="field"><label>Beat radius (km)</label><input type="number" id="setBeatRadius" value="7" min="0" step="0.5" /></div>
-        </div>
-        <div class="rules-table-wrap">
-          <table class="rules" id="beatRulesTable">
-            <thead>
-              <tr>
-                <th style="width:26px"></th>
-                <th>Designation</th>
-                <th>Min. market working hours</th>
-                <th style="width:30px"></th>
-              </tr>
-            </thead>
-            <tbody id="beatRulesBody"></tbody>
-          </table>
-        </div>
-        <div class="btn-row">
-          <button class="btn btn-sm" id="btnAddBeatRule">+ Add designation</button>
-          <button class="btn btn-sm btn-ghost" id="btnResetBeatRules">Reset to 4.5 hrs default</button>
-        </div>
-      </div>
-
-      <div class="panel">
-        <div class="panel-title">🔍 Verification sensitivity</div>
-        <div class="panel-desc">Controls when a "Present" day gets flagged for manual verification against the GPS log.</div>
-        <div class="settings-grid">
-          <div class="field"><label>Min. GPS pings expected</label><input type="number" id="setMinPings" value="2" min="0" /></div>
-          <div class="field"><label>Min. distance travelled (km)</label><input type="number" id="setMinKm" value="0.5" min="0" step="0.1" /></div>
-        </div>
-      </div>
-
-      <div class="panel">
-        <div class="panel-title">👤 Employee visibility</div>
-        <div class="panel-desc">Uses each employee's current status from the Users file. If they're marked Inactive but still had at least one real worked day this period, they stay in the report with days after their last active day shown as <strong>INACTIVE</strong> instead of Absent. If they're Inactive with zero real worked days anywhere this period, they're left out entirely. A day with no record at all (before joining) is shown as <strong>NA</strong>.</div>
-        <label class="toggle-row">
-          <span class="toggle-switch"><input type="checkbox" id="setHideInactive" checked/><span class="toggle-slider"></span></span>
-          <span class="toggle-label">Hide employees with no activity anywhere in this period</span>
-        </label>
-        <div class="hint" id="excludedHint"></div>
-      </div>
-
-      <div class="btn-row">
-        <button class="btn btn-primary" id="btnProcess" disabled>Run audit →</button>
-      </div>
-    </section>
-
-    <!-- ============ STEP 2: DASHBOARD ============ -->
-    <section id="page-dashboard" class="hidden">
-      <div class="page-head">
-        <div class="eyebrow">Step 2</div>
-        <h1>Audit Dashboard</h1>
-        <div class="subtitle">Everything reconciled against your rules and the GPS log. Anything unusual is surfaced here first — export happens once this looks right.</div>
-      </div>
-
-      <div class="kpi-grid" id="kpiGrid"></div>
-
-      <div class="ticker-wrap">
-        <div class="ticker-head">
-          <div class="ticker-title"><span class="dot"></span>Needs verification</div>
-          <div class="hint" style="margin:0;" id="tickerCount"></div>
-        </div>
-        <div class="ticker-track" id="tickerTrack"></div>
-      </div>
-
-      <div class="panel">
-        <div class="panel-title">🚩 Flagged records</div>
-        <div class="filters">
-          <input type="text" id="fltSearch" placeholder="Search name / emp code..." style="min-width:200px;" />
-          <select id="fltDesig"><option value="">All designations</option></select>
-          <select id="fltReason">
-            <option value="">All reasons</option>
-            <option value="rule_mismatch">Rule mismatch (raw vs computed)</option>
-            <option value="no_activity">No GPS activity found</option>
-            <option value="low_activity">Low GPS activity vs claimed status</option>
-            <option value="radius_deviation">Beat radius deviation (P1)</option>
-            <option value="min_hours_not_met">Min. market hours not met (P2)</option>
-            <option value="no_logout">No manual logout (P3)</option>
-          </select>
-        </div>
-        <div class="table-wrap">
-          <table class="flags" id="flagsTable">
-            <thead>
-              <tr>
-                <th>Emp Code</th><th>Name</th><th>Designation</th><th>Branch</th><th>Date</th>
-                <th>Final Status</th><th>Duration</th><th>GPS Pings</th><th>Distance</th><th>Why it's flagged</th>
-              </tr>
-            </thead>
-            <tbody id="flagsBody"></tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
-    <!-- ============ STEP 3: EXPORT ============ -->
-    <section id="page-export" class="hidden">
-      <div class="page-head">
-        <div class="eyebrow">Step 3</div>
-        <h1>Export</h1>
-        <div class="subtitle">One workbook, six sheets — built fresh from the rules currently in Step 1. Change a rule and re-run to regenerate everything downstream.</div>
-      </div>
-
-      <div class="panel">
-        <div class="export-list">
-          <div class="export-item"><div class="num">1</div><div><h4>Final Report</h4><p>Employee × date matrix with the status your team ships to management — colour-coded P / HD / AB / WO / P1 / P2 / P3.</p></div></div>
-          <div class="export-item"><div class="num">2</div><div><h4>Raw Report</h4><p>The joined dataset from all uploaded source files, untouched, for traceability.</p></div></div>
-          <div class="export-item"><div class="num">3</div><div><h4>Formula Explanation</h4><p>Every designation's attendance and beat/market-working rule written out in plain words — regenerates automatically when you edit a rule.</p></div></div>
-          <div class="export-item"><div class="num">4</div><div><h4>Differences</h4><p>Every case where the raw status disagrees with what Smartverse computes from your rules, including late-login downgrades.</p></div></div>
-          <div class="export-item"><div class="num">5</div><div><h4>Activity Verification</h4><p>Full GPS detail, beat-compliance status, per-employee-day analytics, and a highlighted list of exactly who/when needs a manual check and why.</p></div></div>
-          <div class="export-item"><div class="num">6</div><div><h4>Verify</h4><p>One row per employee with any doubt or rule breach — sorted worst-first, with a breakdown of P1/P2/P3/GPS/rule issues and every flagged day's exact reason.</p></div></div>
-        </div>
-        <div class="btn-row">
-          <button class="btn btn-primary" id="btnExport" disabled>⬇ Download Smartverse_Report.xlsx</button>
-          <button class="btn" id="btnEmailText" disabled>✉ Copy flag summary for email</button>
-        </div>
-        <div id="emailBoxWrap" class="hidden" style="margin-top:16px;">
-          <div class="panel-desc" style="margin-bottom:8px;">Plain-text summary — copied to clipboard, paste straight into an email.</div>
-          <textarea class="email-box" id="emailBox" readonly></textarea>
-        </div>
-      </div>
-    </section>
-
+  <section class="card">
+    <h2><span class="step">5</span>Preview & export</h2>
+    <p class="sub" id="prevSub"></p>
+    <div id="notes"></div>
+    <div class="kpis" id="kpis"></div>
+    <div class="legend" id="legend"></div>
+    <div class="bar">
+      <input type="search" id="q" placeholder="Search name, code, head…">
+      <div class="seg" id="flt"><button data-f="all" class="on">All</button><button data-f="att">Needs attention</button><button data-f="inact">Inactive</button><button data-f="nm">Not in master</button></div>
+      <span style="flex:1"></span><span class="hint" id="cnt"></span>
+    </div>
+    <div class="tbl"><table><thead><tr><th>Employee</th><th>Location / Company</th><th>Day codes</th><th class="num">Absent</th><th class="num">Payable</th><th class="num">Prev. Month</th><th class="num">Assumed</th><th class="num">Final</th><th>Remarks</th></tr></thead><tbody id="pBody"></tbody></table></div>
+    <div class="exp" style="margin-top:18px">
+      <div class="hint" style="max-width:640px">The Excel keeps your familiar salary sheet layout, with live formulas in every count column, colour-coded day codes, yellow input columns (Other Adjustment, MELA-EDF) and a full calculation explanation at the end of the sheet.</div>
+      <button class="btn pri" id="exportBtn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 3v12m0 0l-5-5m5 5l5-5M4 21h16"/></svg>Download Excel</button>
+    </div>
+  </section>
   </div>
-</div>
-
-<div class="toast" id="toast"></div>
-
-<div class="loader-overlay" id="loaderOverlay">
-  <div class="loader-card">
-    <div class="orbit"><span></span><span></span><span></span><span></span></div>
-    <div class="loader-text" id="loaderText">Working…</div>
-    <div class="loader-sub" id="loaderSub"></div>
-  </div>
-</div>
+  <footer>Attendance Builder · dates shown as DD-MM-YYYY · times in IST</footer>
+</main>
+<div class="toast hidden" id="toast"></div>
 
 <script>
-/* =========================================================
-   SMARTVERSE — state
-   ========================================================= */
-const state = {
-  dprWorkbook:null, dprLong:[],
-  usersIndex:null,   // Map loginId -> {designation, empStatus}
-  masterIndex:null,  // Map empCode -> {reportingHead}
-  actWorkbook:null, actIndex:null, actIndexByEmp:null, stateIndex:null, // Map normName/EmpCode -> Map date -> {pings,km,locations:Set,times:[]}
-  rawWorkbook:null, rawRows:[], rawHeaderMap:null,
-  rules:[], beatRules:[], processed:[], flags:[], diffs:[],
-  ready:false
-};
+/* Attendance Builder core — parsing, matching, calculation, Excel export.
+   Works in browser (window.AttCore) and Node (module.exports). Needs ExcelJS. */
+(function (root) {
+  'use strict';
 
-const DEFAULT_RULES = [
- {desig:'SO', method:'First Call to Log out', full:8, hdMin:4.5, hdMax:8, egMin:7, egMax:8, absentBelow:4.5, note:''},
- {desig:'TSO', method:'First Call to Log out', full:8, hdMin:4.5, hdMax:8, egMin:7, egMax:8, absentBelow:4.5, note:''},
- {desig:'SSSM', method:'First Call to Log out', full:8, hdMin:4.5, hdMax:8, egMin:null, egMax:null, absentBelow:4.5, note:''},
- {desig:'EX-DSM', method:'Log In to Log Out', full:8, hdMin:4.5, hdMax:8, egMin:null, egMax:null, absentBelow:4.5, note:''},
- {desig:'PROMOTER', method:'Log In to Log Out', full:8, hdMin:4.5, hdMax:8, egMin:null, egMax:null, absentBelow:4.5, note:'HD if Log-in after 11:30 AM'},
- {desig:'AUDITOR SPICES', method:'Log In to Log Out', full:8, hdMin:4.5, hdMax:8, egMin:null, egMax:null, absentBelow:4.5, note:''},
- {desig:'GT - Merchandiser', method:'Log In to Log Out', full:8, hdMin:4.5, hdMax:8, egMin:null, egMax:null, absentBelow:4.5, note:''},
- {desig:'Over invoicing - Audit', method:'Log In to Log Out', full:8, hdMin:4.5, hdMax:8, egMin:null, egMax:null, absentBelow:4.5, note:''},
- {desig:'ASM', method:'Log In to Log Out', full:9, hdMin:4.5, hdMax:7, egMin:7, egMax:9, absentBelow:4.5, note:''},
- {desig:'DH', method:'Log In to Log Out', full:9, hdMin:4.5, hdMax:7, egMin:7, egMax:9, absentBelow:4.5, note:''},
- {desig:'ASE', method:'Log In to Log Out', full:9, hdMin:4.5, hdMax:7, egMin:7, egMax:9, absentBelow:4.5, note:''},
- {desig:'ZSM', method:'Log In to Log Out', full:9, hdMin:4.5, hdMax:7, egMin:7, egMax:9, absentBelow:4.5, note:''},
- {desig:'MODERN TRADE MANAGER', method:'Log In to Log Out', full:9, hdMin:4.5, hdMax:7, egMin:7, egMax:9, absentBelow:4.5, note:'HD if Log-in after 11:30 AM'},
- {desig:'TRADE MARKETING', method:'Log In to Log Out', full:9, hdMin:4.5, hdMax:7, egMin:7, egMax:9, absentBelow:4.5, note:''},
- {desig:'Assistant Manager- Modern Trade', method:'Log In to Log Out', full:9, hdMin:4.5, hdMax:7, egMin:7, egMax:9, absentBelow:4.5, note:''},
- {desig:'Senior Manager - Modern Trade', method:'Log In to Log Out', full:9, hdMin:4.5, hdMax:7, egMin:7, egMax:9, absentBelow:4.5, note:''},
- {desig:'KAE - Modern Trade', method:'Log In to Log Out', full:9, hdMin:4.5, hdMax:7, egMin:7, egMax:9, absentBelow:4.5, note:''},
- {desig:'RSM ( East)', method:'Log In to Log Out', full:9, hdMin:4.5, hdMax:7, egMin:7, egMax:9, absentBelow:4.5, note:''},
- {desig:'Assistant Marketing - BTL', method:'Log In to Log Out', full:9, hdMin:4.5, hdMax:7, egMin:7, egMax:9, absentBelow:4.5, note:''},
-];
+  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 
-const BEAT_DEFAULT_RULES = DEFAULT_RULES.map(r=>({desig:r.desig, minHours:4.5}));
-
-/* =========================================================
-   NAV
-   ========================================================= */
-document.querySelectorAll('.step-btn').forEach(b=>{
-  b.addEventListener('click',()=>goToStep(b.dataset.step));
-});
-function goToStep(step){
-  document.querySelectorAll('section[id^="page-"]').forEach(s=>s.classList.add('hidden'));
-  const target=document.getElementById('page-'+step);
-  target.classList.remove('hidden');
-  target.style.animation='none';
-  void target.offsetWidth;
-  target.style.animation='fadeInUp .45s cubic-bezier(.2,.8,.2,1) both';
-  document.querySelectorAll('.step-btn').forEach(b=>b.classList.toggle('active', b.dataset.step===step));
-}
-function markDone(step){
-  const b=document.querySelector('.step-btn[data-step="'+step+'"]');
-  if(b) b.classList.add('done');
-}
-function toast(msg){
-  const t=document.getElementById('toast');
-  t.textContent=msg; t.classList.add('show');
-  clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),2600);
-}
-function showLoader(text, sub){
-  document.getElementById('loaderText').textContent=text||'Working…';
-  document.getElementById('loaderSub').textContent=sub||'';
-  document.getElementById('loaderOverlay').classList.add('show');
-}
-function hideLoader(){
-  document.getElementById('loaderOverlay').classList.remove('show');
-}
-function nextFrame(){ return new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))); }
-
-/* =========================================================
-   RULES TABLE UI
-   ========================================================= */
-function rangeToStr(min,max){
-  if(min==null||max==null) return '*';
-  return min+' to '+max;
-}
-function renderRules(){
-  const body=document.getElementById('rulesBody');
-  body.innerHTML='';
-  state.rules.forEach((r,i)=>{
-    const tr=document.createElement('tr');
-    tr.innerHTML = `
-      <td class="mono" style="color:var(--muted-2);text-align:center;">${i+1}</td>
-      <td><input data-i="${i}" data-f="desig" value="${escapeHtml(r.desig)}"/></td>
-      <td>
-        <select data-i="${i}" data-f="method">
-          <option value="First Call to Log out" ${r.method==='First Call to Log out'?'selected':''}>First Call → Log out</option>
-          <option value="Log In to Log Out" ${r.method==='Log In to Log Out'?'selected':''}>Log In → Log Out</option>
-        </select>
-      </td>
-      <td><input type="number" step="0.5" data-i="${i}" data-f="full" value="${r.full}"/></td>
-      <td><input data-i="${i}" data-f="hdRange" value="${rangeToStr(r.hdMin,r.hdMax)}" placeholder="4.5 to 8"/></td>
-      <td><input data-i="${i}" data-f="egRange" value="${rangeToStr(r.egMin,r.egMax)}" placeholder="* or 7 to 8"/></td>
-      <td><input type="number" step="0.5" data-i="${i}" data-f="absentBelow" value="${r.absentBelow}"/></td>
-      <td><input data-i="${i}" data-f="note" value="${escapeHtml(r.note||'')}" placeholder="optional"/></td>
-      <td><button class="row-del" data-i="${i}" title="Remove">✕</button></td>
-    `;
-    body.appendChild(tr);
-  });
-  body.querySelectorAll('input,select').forEach(el=>{
-    el.addEventListener('change',onRuleFieldChange);
-  });
-  body.querySelectorAll('.row-del').forEach(el=>{
-    el.addEventListener('click',()=>{
-      state.rules.splice(+el.dataset.i,1);
-      renderRules();
-    });
-  });
-}
-function onRuleFieldChange(e){
-  const i=+e.target.dataset.i, f=e.target.dataset.f, v=e.target.value;
-  const r=state.rules[i];
-  if(f==='hdRange'){ const rg=parseRange(v); r.hdMin=rg?rg.min:null; r.hdMax=rg?rg.max:null; }
-  else if(f==='egRange'){ const rg=parseRange(v); r.egMin=rg?rg.min:null; r.egMax=rg?rg.max:null; }
-  else if(f==='full'||f==='absentBelow'){ r[f]=parseFloat(v)||0; }
-  else { r[f]=v; }
-}
-document.getElementById('btnAddRule').addEventListener('click',()=>{
-  state.rules.push({desig:'NEW DESIGNATION', method:'Log In to Log Out', full:8, hdMin:4.5, hdMax:8, egMin:null, egMax:null, absentBelow:4.5, note:''});
-  renderRules();
-});
-document.getElementById('btnResetRules').addEventListener('click',()=>{
-  state.rules = JSON.parse(JSON.stringify(DEFAULT_RULES));
-  renderRules();
-  toast('Rules reset to default set');
-});
-state.rules = JSON.parse(JSON.stringify(DEFAULT_RULES));
-renderRules();
-
-/* =========================================================
-   BEAT COVERAGE & MARKET WORKING RULES TABLE UI
-   ========================================================= */
-function renderBeatRules(){
-  const body=document.getElementById('beatRulesBody');
-  body.innerHTML='';
-  state.beatRules.forEach((r,i)=>{
-    const tr=document.createElement('tr');
-    tr.innerHTML = `
-      <td class="mono" style="color:var(--muted-2);text-align:center;">${i+1}</td>
-      <td><input data-i="${i}" data-f="desig" value="${escapeHtml(r.desig)}"/></td>
-      <td><input type="number" step="0.5" data-i="${i}" data-f="minHours" value="${r.minHours}"/></td>
-      <td><button class="row-del" data-i="${i}" title="Remove">✕</button></td>
-    `;
-    body.appendChild(tr);
-  });
-  body.querySelectorAll('input').forEach(el=>{
-    el.addEventListener('change',onBeatRuleFieldChange);
-  });
-  body.querySelectorAll('.row-del').forEach(el=>{
-    el.addEventListener('click',()=>{
-      state.beatRules.splice(+el.dataset.i,1);
-      renderBeatRules();
-    });
-  });
-}
-function onBeatRuleFieldChange(e){
-  const i=+e.target.dataset.i, f=e.target.dataset.f, v=e.target.value;
-  const r=state.beatRules[i];
-  if(f==='minHours'){ r.minHours=parseFloat(v)||0; }
-  else { r[f]=v; }
-}
-document.getElementById('btnAddBeatRule').addEventListener('click',()=>{
-  state.beatRules.push({desig:'NEW DESIGNATION', minHours:4.5});
-  renderBeatRules();
-});
-document.getElementById('btnResetBeatRules').addEventListener('click',()=>{
-  state.beatRules = JSON.parse(JSON.stringify(BEAT_DEFAULT_RULES));
-  renderBeatRules();
-  toast('Beat & market working rules reset to 4.5 hrs default');
-});
-state.beatRules = JSON.parse(JSON.stringify(BEAT_DEFAULT_RULES));
-renderBeatRules();
-function findBeatRule(desig){
-  const d=normKey(desig);
-  return state.beatRules.find(r=>normKey(r.desig)===d) || null;
-}
-
-function escapeHtml(s){ return (s||'').toString().replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-
-function parseRange(str){
-  if(!str) return null;
-  str=str.trim();
-  if(str==='*'||str==='') return null;
-  const nums = (str.match(/-?\d+(\.\d+)?/g)||[]).map(Number);
-  if(nums.length===0) return null;
-  if(/below/i.test(str) && nums.length===1) return {min:-Infinity, max:nums[0]};
-  if(/above|over/i.test(str) && nums.length===1) return {min:nums[0], max:Infinity};
-  if(nums.length===1) return {min:nums[0], max:nums[0]};
-  return {min:Math.min(...nums), max:Math.max(...nums)};
-}
-
-/* =========================================================
-   FILE UPLOAD
-   ========================================================= */
-function normName(s){ return (s||'').toString().toUpperCase().replace(/\s+/g,' ').trim(); }
-function normKey(s){ return (s||'').toString().toUpperCase().replace(/[^A-Z0-9]/g,''); }
-function normId(s){ return (s||'').toString().trim().replace(/^\t+/,''); }
-
-const HEADER_MAP = {
-  state:['state'],
-  empCode:['emp code','employee code','employee id','emp id'],
-  name:['name','employee name'],
-  loginId:['login id'],
-  designation:['designation'],
-  branch:['branch'],
-  reportingHead:['reporting head','report to'],
-  empStatus:['status','user status'],
-  date:['date'],
-  day:['day'],
-  firstCallTime:['first call time'],
-  inTime:['in-time','in time'],
-  outTime:['out time','out-time'],
-  duration:['duration'],
-  attendanceStatus:['attendance status'],
-  totalKm:['total km','km travelled'],
-  remarks:['remarks']
-};
-function detectHeaderMap(headerRow, keys){
-  const map={};
-  const used=new Set();
-  (keys||Object.keys(HEADER_MAP)).forEach(key=>{
-    const kws=HEADER_MAP[key];
-    let bestIdx=-1;
-    headerRow.forEach((h,idx)=>{
-      if(used.has(idx)) return;
-      const hs=(h||'').toString().trim().toLowerCase();
-      if(!hs) return;
-      kws.forEach(kw=>{
-        if(hs===kw && bestIdx===-1) bestIdx=idx;
-      });
-    });
-    if(bestIdx===-1){
-      headerRow.forEach((h,idx)=>{
-        if(used.has(idx)||bestIdx!==-1) return;
-        const hs=(h||'').toString().trim().toLowerCase();
-        kws.forEach(kw=>{ if(hs.includes(kw) && bestIdx===-1) bestIdx=idx; });
-      });
+  /* ---------- small helpers ---------- */
+  function txt(v) {
+    if (v === null || v === undefined) return '';
+    if (v instanceof Date) return v;
+    if (typeof v === 'object') {
+      if (v.richText) return v.richText.map(r => r.text).join('');
+      if (v.text !== undefined) return String(v.text);
+      if (v.result !== undefined) return txt(v.result);
+      return '';
     }
-    if(bestIdx!==-1){ map[key]=bestIdx; used.add(bestIdx); }
-  });
-  return map;
-}
-function scoreSheetAsRaw(headerRow){
-  const map=detectHeaderMap(headerRow);
-  const must=['empCode','designation','date'];
-  const nice=['duration','attendanceStatus','name'];
-  let score=0;
-  must.forEach(k=>{ if(map[k]!=null) score+=3; });
-  nice.forEach(k=>{ if(map[k]!=null) score+=1; });
-  return {score, map};
-}
-function findHeaderRowIndex(rows){
-  for(let i=0;i<Math.min(rows.length,15);i++){
-    const row=rows[i]||[];
-    const text = row.join('|').toLowerCase();
-    if(text.includes('emp') && (text.includes('designation')||text.includes('date'))) return i;
+    return String(v);
   }
-  return 0;
-}
-function isDateLike(v){
-  if(v==null||v==='') return false;
-  if(typeof v==='number') return v>25000 && v<80000;
-  const s=v.toString().trim();
-  return /^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}$/.test(s);
-}
+  function clean(s) { return String(s || '').replace(/ /g, ' ').replace(/\s+/g, ' ').trim(); }
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
+  function keyOf(y, m, d) { return y + '-' + pad(m) + '-' + pad(d); }           // ISO key, m 1-based
+  function fmtKey(k) { const [y, m, d] = k.split('-'); return d + '-' + m + '-' + y; } // DD-MM-YYYY
+  function shortKey(k) { const [, m, d] = k.split('-'); return d + '/' + m; }
+  function daysInMonth(y, m) { return new Date(Date.UTC(y, m, 0)).getUTCDate(); }
+  function dowOf(k) { const [y, m, d] = k.split('-').map(Number); return new Date(Date.UTC(y, m - 1, d)).getUTCDay(); }
 
-/* ---- workbook reading, with HTML-disguised-as-.xls fallback ---- */
-function sheetRowsOf(wb, sheetName){
-  return XLSX.utils.sheet_to_json(wb.Sheets[sheetName],{header:1,defval:null,blankrows:false});
-}
-function bestSheetRows(src){
-  if(src.kind==='rows') return src.rows;
-  let best=[];
-  src.wb.SheetNames.forEach(name=>{
-    const rows=sheetRowsOf(src.wb, name);
-    if(rows.length>best.length) best=rows;
-  });
-  return best;
-}
-function parseHtmlTableToRows(text){
-  const doc = new DOMParser().parseFromString(text,'text/html');
-  const tables = [...doc.querySelectorAll('table')];
-  if(!tables.length) return null;
-  let best=tables[0], bestScore=0;
-  tables.forEach(t=>{
-    const score = t.querySelectorAll('tr').length * t.querySelectorAll('tr')[0]?.querySelectorAll('td,th').length||0;
-    if(score>bestScore){ bestScore=score; best=t; }
-  });
-  const rows=[...best.querySelectorAll('tr')].map(tr=>
-    [...tr.querySelectorAll('td,th')].map(td=> td.textContent.replace(/\s+/g,' ').trim() || null)
-  );
-  return rows.filter(r=>r.length);
-}
-async function readWorkbookOrHtml(file){
-  const buf = await file.arrayBuffer();
-  try{
-    const wb = XLSX.read(new Uint8Array(buf), {type:'array', cellDates:false, dense:true});
-    if(wb && wb.SheetNames && wb.SheetNames.length){
-      const firstRows = sheetRowsOf(wb, wb.SheetNames[0]);
-      if(firstRows.length>0) return {kind:'workbook', wb};
+  // Parse a date cell: Date object, "DD-MM-YYYY", "DD/MM/YYYY", "DD-MM-YY", or Excel serial
+  function parseDateCell(v) {
+    if (v instanceof Date && !isNaN(v)) return keyOf(v.getUTCFullYear(), v.getUTCMonth() + 1, v.getUTCDate());
+    if (typeof v === 'number' && v > 20000 && v < 80000) {
+      const d = new Date(Math.round((v - 25569) * 86400000));
+      return keyOf(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate());
     }
-  }catch(e){ /* fall through to HTML */ }
-  const text = new TextDecoder('utf-8').decode(buf);
-  const rows = parseHtmlTableToRows(text);
-  if(rows && rows.length) return {kind:'rows', rows};
-  throw new Error('Unrecognised file format');
-}
-
-/* ---- 1. Daily Performance Report — wide, reshape to long ---- */
-function reshapeWideDPR(rows){
-  if(rows.length<3) return null;
-  const titleRow = rows[0]||[];
-  let blockStart=-1;
-  for(let i=0;i<titleRow.length;i++){ if(isDateLike(titleRow[i])){ blockStart=i; break; } }
-  if(blockStart===-1) return null;
-  let blockWidth=-1;
-  for(let i=blockStart+1;i<titleRow.length;i++){ if(isDateLike(titleRow[i])){ blockWidth=i-blockStart; break; } }
-  if(blockWidth===-1) blockWidth=8;
-
-  const fieldHeaderRow = rows[1]||[];
-  const staticHeaders = fieldHeaderRow.slice(0,blockStart);
-  const staticMap = detectHeaderMap(staticHeaders, ['empCode','name','loginId','branch']);
-
-  const out=[];
-  for(let r=2;r<rows.length;r++){
-    const row=rows[r]; if(!row) continue;
-    const empCode = normId(row[staticMap.empCode]);
-    if(!empCode) continue;
-    const name=(row[staticMap.name]||'').toString().trim();
-    const loginId=normId(row[staticMap.loginId]);
-    const branch=(row[staticMap.branch]||'').toString().trim();
-
-    for(let c=blockStart; c<titleRow.length && isDateLike(titleRow[c]); c+=blockWidth){
-      const blockHeaders = fieldHeaderRow.slice(c, c+blockWidth);
-      const bmap = detectHeaderMap(blockHeaders, ['inTime','outTime','firstCallTime','duration']);
-      // location/status fields need exact loose matching since "Status" alone and two "Location" columns exist per block
-      let loginLocIdx=-1, logoutLocIdx=-1, kmIdx=-1, statusIdx=-1;
-      blockHeaders.forEach((h,idx)=>{
-        const hs=(h||'').toString().trim().toLowerCase();
-        if(hs.includes('login location')) loginLocIdx=idx;
-        else if(hs.includes('logout location')) logoutLocIdx=idx;
-        else if(hs.includes('km')) kmIdx=idx;
-        else if(hs==='status'||hs==='attendance status') statusIdx=idx;
-      });
-      const date = normalizeDateStr(titleRow[c]);
-      const get = idx => idx!=null && idx>-1 ? row[c+idx] : null;
-      out.push({
-        empCode, name, loginId, branch, date,
-        inTime: get(bmap.inTime), outTime: get(bmap.outTime), firstCallTime: get(bmap.firstCallTime),
-        loginLocation: loginLocIdx>-1? row[c+loginLocIdx] : null,
-        logoutLocation: logoutLocIdx>-1? row[c+logoutLocIdx] : null,
-        duration: get(bmap.duration),
-        status: statusIdx>-1? row[c+statusIdx] : null,
-        totalKm: kmIdx>-1? row[c+kmIdx] : null
-      });
+    const s = clean(txt(v));
+    let m = s.match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2,4})$/);
+    if (m) {
+      let y = +m[3]; if (y < 100) y += 2000;
+      const mo = +m[2], d = +m[1];
+      if (mo >= 1 && mo <= 12 && d >= 1 && d <= 31) return keyOf(y, mo, d);
     }
+    m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (m) return keyOf(+m[1], +m[2], +m[3]);
+    return null;
   }
-  return out.length? out : null;
-}
 
-/* fallback: a single already-long-format combined raw sheet (old workflow) */
-function loadLongFormatRaw(wb){
-  let best=null;
-  wb.SheetNames.forEach(name=>{
-    const rows=sheetRowsOf(wb,name);
-    if(!rows.length) return;
-    const hIdx=findHeaderRowIndex(rows);
-    const headerRow=rows[hIdx]||[];
-    const {score,map}=scoreSheetAsRaw(headerRow);
-    if(score>=6 && (!best||score>best.score)) best={score, map, rows: rows.slice(hIdx+1), sheetName:name};
-  });
-  if(!best) return null;
-  const out=[];
-  best.rows.forEach(r=>{
-    if(!r || r[best.map.empCode]==null || r[best.map.empCode]==='') return;
-    const g = k => best.map[k]!=null ? r[best.map[k]] : null;
-    out.push({
-      empCode: normId(g('empCode')), name:(g('name')||'').toString().trim(), loginId: normId(g('loginId')),
-      branch:(g('branch')||'').toString().trim(), designation:(g('designation')||'').toString().trim(),
-      reportingHead:(g('reportingHead')||'').toString().trim(), empStatus: g('empStatus'),
-      date: normalizeDateStr(g('date')), inTime:g('inTime'), outTime:g('outTime'), firstCallTime:g('firstCallTime'),
-      duration:g('duration'), attendanceStatus:g('attendanceStatus'), totalKm:g('totalKm'),
-      state:(g('state')||'').toString().trim(), remarks:g('remarks')
+  // book = [{name, rows:[[...]]}] (from SheetJS sheet_to_json header:1). r is 1-based.
+  function rowVals(ws, r) { return (ws.rows[r - 1] || []).slice(); }
+  function toBook(XLSX, buf) {
+    const wb = XLSX.read(buf, { type: 'array', cellDates: false });
+    return wb.SheetNames.map(n => {
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[n], { header: 1, raw: true, defval: null, blankrows: true });
+      return { name: n, rows, rowCount: rows.length };
     });
-  });
-  // auto-detect an ATTENDANCE RULE sheet in the same workbook
-  let ruleSheet=null;
-  wb.SheetNames.forEach(name=>{ if(/rule/i.test(name)) ruleSheet=name; });
-  let loadedRules=false;
-  if(ruleSheet){
-    const rows=sheetRowsOf(wb, ruleSheet);
-    const hIdx = rows.findIndex(r=> r && r.join('|').toLowerCase().includes('designation') && r.join('|').toLowerCase().includes('full day'));
-    if(hIdx>-1){
-      const parsed=[];
-      for(let i=hIdx+1;i<rows.length;i++){
-        const r=rows[i]; if(!r||!r[0]) continue;
-        const full=(parseRange(r[2])||{max:8}).max, hd=parseRange(r[3]), eg=parseRange(r[4]), ab=parseRange(r[5]);
-        parsed.push({desig:(r[0]||'').toString().trim(), method:(r[1]||'Log In to Log Out').toString().trim(), full,
-          hdMin:hd?hd.min:null, hdMax:hd?hd.max:null, egMin:eg?eg.min:null, egMax:eg?eg.max:null,
-          absentBelow: ab?ab.max:4.5, note:(r[6]||'').toString().trim()});
+  }
+
+  /* ---------- attendance code handling ---------- */
+  function normCode(v) {
+    let s = clean(txt(v)).toUpperCase().replace(/[’'`\s]/g, '');
+    if (s === 'A' || s === 'ABSENT') s = 'AB';
+    if (s === 'W/O' || s === 'W.O') s = 'WO';
+    return s;
+  }
+  // Classify one code -> day type. Any combination is allowed (P3EG, EGP3, HDP3, P5P3, P4P3, HDEG...).
+  // Priority: AB > HD > EG > L > P4 > WO > H > P. P3 / P5 are flags counted separately.
+  const PRIORITY = ['AB', 'HD', 'EG', 'L', 'P4', 'WO'];
+  function classify(code) {
+    if (!code) return 'BLANK';
+    if (code === '-') return 'NA';
+    for (const t of PRIORITY) if (code.includes(t)) return t;
+    if (code === 'H') return 'H';
+    if (code.includes('P')) return 'P';
+    return 'OTHER';
+  }
+
+  /* ---------- Breeze report ---------- */
+  function parseBreeze(wb) {
+    for (const ws of wb) {
+      let hdrRow = 0;
+      for (let r = 1; r <= Math.min(ws.rowCount, 15) && !hdrRow; r++) {
+        if (rowVals(ws, r).some(v => /^emp\s*code$/i.test(clean(txt(v))))) hdrRow = r;
       }
-      if(parsed.length){ state.rules=parsed; renderRules(); loadedRules=true; }
-    }
-  }
-  return {rows:out, sheetName:best.sheetName, loadedRules, ruleSheet};
-}
-
-function loadDPRWorkbook(src){
-  const rows = bestSheetRows(src);
-  let long = reshapeWideDPR(rows);
-  let msg='';
-  if(long){
-    msg = `Daily Performance Report reshaped — ${long.length.toLocaleString()} employee-day rows from ${new Set(long.map(r=>r.empCode)).size} employees.`;
-  } else if(src.kind==='workbook'){
-    const res = loadLongFormatRaw(src.wb);
-    if(res){
-      long = res.rows;
-      msg = `Recognised "${res.sheetName}" as an already-combined raw sheet — ${long.length.toLocaleString()} rows loaded directly.` +
-        (res.loadedRules? ` Also auto-loaded designation rules from "${res.ruleSheet}".` : '');
-    }
-  }
-  if(!long){ toast('Could not recognise this file as a Daily Performance Report.'); return; }
-  state.dprLong = long;
-  document.getElementById('detectHint').innerHTML = msg;
-  checkReadyToProcess();
-}
-
-/* ---- 2. Users — Designation + Status, keyed by Login ID ---- */
-function loadUsersWorkbook(src){
-  const rows = bestSheetRows(src);
-  if(!rows.length) return;
-  const headerRow = rows[0];
-  const map = detectHeaderMap(headerRow, ['loginId','designation','empStatus','name']);
-  if(map.loginId==null){ toast('Could not find a Login ID column in the Users file.'); return; }
-  const index=new Map();
-  for(let i=1;i<rows.length;i++){
-    const r=rows[i]; if(!r) continue;
-    const id=normId(r[map.loginId]); if(!id) continue;
-    index.set(id, {
-      designation:(r[map.designation]||'').toString().trim(),
-      empStatus:(r[map.empStatus]||'').toString().trim(),
-      name:(map.name!=null? r[map.name]:'')
-    });
-  }
-  state.usersIndex=index;
-  document.getElementById('detectHint').innerHTML += `<br/>Users file loaded — ${index.size.toLocaleString()} logins matched (Designation &amp; Status).`;
-  checkReadyToProcess();
-}
-
-/* ---- 3. Employee Master — Reporting Head, keyed by Emp Code ---- */
-function loadMasterWorkbook(src){
-  const rows = bestSheetRows(src);
-  if(!rows.length) return;
-  const headerRow = rows[0];
-  let empCodeIdx = headerRow.findIndex(h=>/employee code|emp code/i.test(h||''));
-  let reportToIdx = headerRow.findIndex(h=>/report\s*to|reporting head/i.test(h||''));
-  let desigIdx = headerRow.findIndex(h=>/designation/i.test(h||''));
-  if(empCodeIdx===-1){ toast('Could not find an Employee Code column in the Employee Master file.'); return; }
-  const index=new Map();
-  for(let i=1;i<rows.length;i++){
-    const r=rows[i]; if(!r) continue;
-    const code=normId(r[empCodeIdx]); if(!code) continue;
-    let reportingHead = reportToIdx>-1 ? (r[reportToIdx]||'').toString().trim() : '';
-    reportingHead = reportingHead.replace(/\s*\[[^\]]*\]\s*$/,'').trim();
-    index.set(code, { reportingHead, designation: desigIdx>-1? (r[desigIdx]||'').toString().trim() : '' });
-  }
-  state.masterIndex=index;
-  document.getElementById('detectHint').innerHTML += `<br/>Employee Master loaded — ${index.size.toLocaleString()} employees matched (Reporting Head).`;
-  checkReadyToProcess();
-}
-
-/* ---- 4. Employee Activity / GPS log — cross-check + State ---- */
-const INDIAN_STATES = ['ANDHRA PRADESH','ARUNACHAL PRADESH','ASSAM','BIHAR','CHHATTISGARH','GOA','GUJARAT','HARYANA',
- 'HIMACHAL PRADESH','JHARKHAND','KARNATAKA','KERALA','MADHYA PRADESH','MAHARASHTRA','MANIPUR','MEGHALAYA','MIZORAM',
- 'NAGALAND','ODISHA','PUNJAB','RAJASTHAN','SIKKIM','TAMIL NADU','TELANGANA','TRIPURA','UTTAR PRADESH','UTTARAKHAND',
- 'WEST BENGAL','DELHI','JAMMU AND KASHMIR','LADAKH','PUDUCHERRY','CHANDIGARH'];
-function guessStateFromAddress(addr){
-  if(!addr) return '';
-  const up=addr.toString().toUpperCase();
-  for(const s of INDIAN_STATES){ if(up.includes(s)) return s; }
-  return '';
-}
-function loadActivityWorkbook(src){
-  const rows = bestSheetRows(src);
-  if(!rows.length) return;
-  const headerRow=rows[0];
-  const idx = re => headerRow.findIndex(x=> re.test((x||'').toString().trim()));
-  const iEmpId = idx(/^employee id$/i);
-  const iName = idx(/^employee name$/i)>-1? idx(/^employee name$/i) : idx(/name/i);
-  const iStateName = idx(/^state name$/i);
-  const iDate = idx(/visit date/i)>-1? idx(/visit date/i) : idx(/^date$/i);
-  const iDist = idx(/distance/i);
-  const iLoc = idx(/^location$/i)>-1? idx(/^location$/i) : idx(/location/i);
-
-  const byEmp=new Map(), byName=new Map(), stByEmp=new Map(), stByName=new Map();
-  const n=rows.length;
-  for(let i=1;i<n;i++){
-    const r=rows[i]; if(!r) continue;
-    const empCode = iEmpId>-1? normId(r[iEmpId]) : '';
-    const nm = iName>-1? normName(r[iName]) : '';
-    const dt = iDate>-1? normalizeDateStr(r[iDate]) : null;
-
-    if(iStateName>-1 || iLoc>-1){
-      const st = iStateName>-1? (r[iStateName]||'').toString().trim().toUpperCase() : guessStateFromAddress(r[iLoc]);
-      if(st){
-        if(empCode && !stByEmp.has(empCode)) stByEmp.set(empCode, st);
-        if(nm && !stByName.has(nm)) stByName.set(nm, st);
+      if (!hdrRow) continue;
+      const h = rowVals(ws, hdrRow).map(v => clean(txt(v)).toLowerCase());
+      const col = n => h.findIndex(x => x === n);
+      const cols = {
+        state: col('state'), code: col('emp code'), name: col('name'),
+        desig: col('designation'), head: col('reporting head'), status: col('status')
+      };
+      // date row: header row itself or the next ones
+      let dateCols = [];
+      for (let r = hdrRow; r <= hdrRow + 2 && !dateCols.length; r++) {
+        const vals = rowVals(ws, r);
+        vals.forEach((v, i) => { const k = parseDateCell(v); if (k) dateCols.push({ i, key: k }); });
+        if (dateCols.length) var dataStart = r + 1;
       }
+      if (!dateCols.length) throw new Error('No date columns found in the Breeze report.');
+      const emps = [];
+      for (let r = dataStart; r <= ws.rowCount; r++) {
+        const v = rowVals(ws, r);
+        const code = clean(txt(v[cols.code]));
+        if (!code) continue;
+        const rawName = clean(txt(v[cols.name]));
+        const days = {};
+        dateCols.forEach(dc => { days[dc.key] = normCode(v[dc.i]); });
+        emps.push({
+          state: clean(txt(v[cols.state])).toUpperCase(),
+          code, rawName,
+          desig: clean(txt(v[cols.desig])),
+          head: clean(txt(v[cols.head])),
+          status: clean(txt(v[cols.status])) || 'Active',
+          days
+        });
+      }
+      return { sheet: ws.name, dates: dateCols.map(d => d.key).sort(), emps };
     }
-    if(!dt) continue;
-    const d = iDist>-1? parseFloat(r[iDist]) : NaN;
-    const dOk = !isNaN(d);
-
-    if(empCode){
-      let byDate=byEmp.get(empCode);
-      if(!byDate){ byDate=new Map(); byEmp.set(empCode,byDate); }
-      let rec=byDate.get(dt);
-      if(!rec){ rec={pings:0,km:0}; byDate.set(dt,rec); }
-      rec.pings++; if(dOk) rec.km+=d;
-    }
-    if(nm){
-      let byDate=byName.get(nm);
-      if(!byDate){ byDate=new Map(); byName.set(nm,byDate); }
-      let rec=byDate.get(dt);
-      if(!rec){ rec={pings:0,km:0}; byDate.set(dt,rec); }
-      rec.pings++; if(dOk) rec.km+=d;
-    }
+    throw new Error('This file does not look like a Breeze Attendance Summary Report (no "Emp Code" header found).');
   }
-  state.actIndexByEmp=byEmp; state.actIndex=byName;
-  state.stateIndexByEmp=stByEmp; state.stateIndexByName=stByName;
-  document.getElementById('detectHint').innerHTML +=
-    `<br/>Activity log loaded — ${byEmp.size||byName.size} distinct employees${iStateName>-1?', State pulled directly':', State guessed from address text'}.`;
-  checkReadyToProcess();
-}
 
-function normalizeDateStr(v){
-  if(v==null) return null;
-  if(typeof v==='number'){
-    const d=XLSX.SSF.parse_date_code(v);
-    if(!d) return null;
-    return String(d.d).padStart(2,'0')+'-'+String(d.m).padStart(2,'0')+'-'+d.y;
+  // "RAJU SEN INACTIVE- 27-10-26" -> {name:'RAJU SEN', dol:'2026-10-27'}
+  function splitName(raw) {
+    const m = raw.match(/^(.*?)\s*\bINACTIVE\b\s*[-:]?\s*(\d{1,2}[-\/.]\d{1,2}[-\/.]\d{2,4})?/i);
+    if (m && /inactive/i.test(raw)) return { name: clean(m[1]), dol: m[2] ? parseDateCell(m[2]) : null };
+    return { name: clean(raw), dol: null };
   }
-  const s=v.toString().trim();
-  const m=s.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
-  if(m){
-    let [_,a,b,y]=m;
-    if(y.length===2) y='20'+y;
-    return String(+a).padStart(2,'0')+'-'+String(+b).padStart(2,'0')+'-'+y;
-  }
-  return s;
-}
-function dayNameFromDateStr(s){
-  if(!s) return '';
-  const m=s.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
-  if(!m) return '';
-  const d=new Date(+m[3], +m[2]-1, +m[1]);
-  return d.toLocaleDateString('en-US',{weekday:'long'});
-}
-function parseNormDate(s){
-  if(!s) return null;
-  const m=s.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
-  if(!m) return null;
-  return new Date(+m[3], +m[2]-1, +m[1]);
-}
 
-function setupDrop(dropId,inputId,nameId,onLoad){
-  const drop=document.getElementById(dropId), input=document.getElementById(inputId), nameEl=document.getElementById(nameId);
-  input.addEventListener('change', async ()=>{
-    const f=input.files[0]; if(!f) return;
-    nameEl.textContent=f.name;
-    drop.classList.add('filled');
-    showLoader('Reading '+f.name, 'Parsing sheets and matching columns…');
-    await nextFrame();
-    try{
-      const src = await readWorkbookOrHtml(f);
-      await nextFrame();
-      onLoad(src);
-    }catch(e){
-      toast('Could not read '+f.name);
-    }
-    hideLoader();
-  });
-}
-setupDrop('dropDPR','fileDPR','fileDPRName', loadDPRWorkbook);
-setupDrop('dropUsers','fileUsers','fileUsersName', loadUsersWorkbook);
-setupDrop('dropMaster','fileMaster','fileMasterName', loadMasterWorkbook);
-setupDrop('dropAct','fileAct','fileActName', loadActivityWorkbook);
-
-/* ---- assemble the joined long-format dataset the rule engine reads ---- */
-const RAW_KEYS = ['state','empCode','name','loginId','designation','branch','reportingHead','empStatus','date','inTime','outTime','firstCallTime','duration','attendanceStatus','totalKm','remarks'];
-const RAW_MAP = Object.fromEntries(RAW_KEYS.map((k,i)=>[k,i]));
-function assembleRawDataset(){
-  const rowsOut=[];
-  state.dprLong.forEach(e=>{
-    const usr = e.loginId ? state.usersIndex?.get(normId(e.loginId)) : null;
-    const mst = state.masterIndex?.get(e.empCode);
-    const designation = e.designation || usr?.designation || mst?.designation || '';
-    const reportingHead = e.reportingHead || mst?.reportingHead || '';
-    const empStatus = e.empStatus || usr?.empStatus || '';
-    const stateName = e.state || state.stateIndexByEmp?.get(e.empCode) || state.stateIndexByName?.get(normName(e.name)) || '';
-    const attendanceStatus = e.attendanceStatus || e.status || '';
-    const row=new Array(RAW_KEYS.length).fill(null);
-    row[RAW_MAP.state]=stateName; row[RAW_MAP.empCode]=e.empCode; row[RAW_MAP.name]=e.name;
-    row[RAW_MAP.loginId]=e.loginId; row[RAW_MAP.designation]=designation; row[RAW_MAP.branch]=e.branch;
-    row[RAW_MAP.reportingHead]=reportingHead; row[RAW_MAP.empStatus]=empStatus; row[RAW_MAP.date]=e.date;
-    row[RAW_MAP.inTime]=e.inTime; row[RAW_MAP.outTime]=e.outTime; row[RAW_MAP.firstCallTime]=e.firstCallTime;
-    row[RAW_MAP.duration]=e.duration; row[RAW_MAP.attendanceStatus]=attendanceStatus; row[RAW_MAP.totalKm]=e.totalKm;
-    row[RAW_MAP.remarks]=e.remarks;
-    rowsOut.push(row);
-  });
-  state.rawRows=rowsOut;
-  state.rawHeaderMap=RAW_MAP;
-}
-
-function checkReadyToProcess(){
-  document.getElementById('btnProcess').disabled = !(state.dprLong && state.dprLong.length);
-}
-
-/* =========================================================
-   PROCESSING / RULE ENGINE
-   ========================================================= */
-function parseDurationHours(v){
-  if(v==null||v==='') return 0;
-  if(typeof v==='number'){
-    // excel time fraction of a day, or already hours
-    if(v<1) return v*24;
-    return v;
-  }
-  const s=v.toString().trim();
-  const m=s.match(/^(\d+):(\d{2})/);
-  if(m) return (+m[1]) + (+m[2])/60;
-  const n=parseFloat(s);
-  return isNaN(n)?0:n;
-}
-function parseTimeOfDay(v){
-  // returns hour-of-day as decimal (0-24), or null if unparseable
-  if(v==null||v==='') return null;
-  if(typeof v==='number'){ if(v<1) return v*24; return null; }
-  const s=v.toString().trim();
-  let m=s.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
-  if(m){
-    let h=+m[1], mins=+m[2], ap=(m[3]||'').toUpperCase();
-    if(ap==='PM' && h<12) h+=12;
-    if(ap==='AM' && h===12) h=0;
-    return h+mins/60;
-  }
-  return null;
-}
-function lateCutoffFromNote(note){
-  if(!note) return null;
-  const m=note.match(/after\s+(\d{1,2}):?(\d{2})?\s*(AM|PM)/i);
-  if(!m) return null;
-  let h=+m[1], mins=+(m[2]||0), ap=(m[3]||'').toUpperCase();
-  if(ap==='PM' && h<12) h+=12;
-  if(ap==='AM' && h===12) h=0;
-  return h+mins/60;
-}
-function findRule(desig){
-  const d=normKey(desig);
-  return state.rules.find(r=>normKey(r.desig)===d) || null;
-}
-const NON_WORKING_KEYWORDS = ['weekly off','week off','leave','holiday','off day','pl','cl','sl'];
-function isNonWorkingStatus(s){
-  const t=(s||'').toString().toLowerCase();
-  return NON_WORKING_KEYWORDS.some(k=>t.includes(k));
-}
-function computeStatus(durationHrs, rule){
-  if(!rule) return {code:null, early:false};
-  let code;
-  if(durationHrs>=rule.full) code='P';
-  else if(rule.hdMin!=null && durationHrs>=rule.hdMin) code='HD';
-  else if(durationHrs<rule.absentBelow) code='AB';
-  else code='HD';
-  let early=false;
-  if(rule.egMin!=null && rule.egMax!=null && durationHrs>=rule.egMin && durationHrs<=rule.egMax) early=true;
-  return {code, early};
-}
-function rawStatusToCode(raw){
-  const t=(raw||'').toString().trim().toUpperCase();
-  if(t==='P'||t.includes('FULL')||t==='PRESENT') return 'P';
-  if(t==='HD'||t.includes('HALF')) return 'HD';
-  if(t==='AB'||t.includes('ABSENT')||t.includes('NOT LOGGED')||t.includes('NOT LOGIN')||t.includes('MISSED')) return 'AB';
-  if(isNonWorkingStatus(t)) return 'WO';
-  return t || null;
-}
-
-document.getElementById('btnProcess').addEventListener('click', async ()=>{
-  showLoader('Running audit…', 'Joining files and reconciling against your rules');
-  await nextFrame();
-  assembleRawDataset();
-  runAudit();
-  hideLoader();
-});
-
-function runAudit(){
-  const map=state.rawHeaderMap;
-  const minPings = parseFloat(document.getElementById('setMinPings').value)||0;
-  const minKm = parseFloat(document.getElementById('setMinKm').value)||0;
-  const beatRadius = parseFloat(document.getElementById('setBeatRadius').value)||7;
-
-  const processed=[]; const diffs=[]; const flags=[];
-  const desigSet=new Set();
-
-  state.rawRows.forEach(r=>{
-    const empCode=r[map.empCode], name=(r[map.name]||'').toString().trim();
-    const designation=(r[map.designation]||'').toString().trim();
-    const branch=map.branch!=null?(r[map.branch]||'').toString().trim():'';
-    const reportingHead=map.reportingHead!=null?(r[map.reportingHead]||'').toString().trim():'';
-    const date=normalizeDateStr(r[map.date]);
-    const day=dayNameFromDateStr(date);
-    const rawStatusTxt = map.attendanceStatus!=null? r[map.attendanceStatus]:null;
-    const durationTxt = map.duration!=null? r[map.duration]:null;
-    const durationHrs = parseDurationHours(durationTxt);
-    const inTimeVal = map.inTime!=null? r[map.inTime]:null;
-    const outTimeVal = map.outTime!=null? r[map.outTime]:null;
-    const firstCallVal = map.firstCallTime!=null? r[map.firstCallTime]:null;
-    const rawTotalKm = map.totalKm!=null? parseFloat(r[map.totalKm]) : NaN;
-    if(designation) desigSet.add(designation);
-
-    // no genuine record for this date at all (not yet joined, or already inactive) — never mark as Absent
-    const hasRecord = !((durationTxt==null||durationTxt==='') && (rawStatusTxt==null||rawStatusTxt==='') && (inTimeVal==null||inTimeVal==='') && (outTimeVal==null||outTimeVal===''));
-    if(!hasRecord){
-      processed.push({empCode,name,designation,branch,reportingHead,date,day,
-        rawStatus:null, computedStatus:null, finalCode:'NA', durationHrs:0,
-        early:false, lateFlag:false, pings:0, km:0, totalKm:0,
-        beatCode:null, beatReason:'', noLogout:false,
-        empStatus: map.empStatus!=null? r[map.empStatus]: '',
-        state: map.state!=null? r[map.state] : '',
-        raw: r
-      });
-      return;
-    }
-
-    const rawCode = rawStatusToCode(rawStatusTxt);
-    let finalCode = rawCode;
-    let computed = {code:null, early:false};
-    let noFirstCall=false;
-    const rule=findRule(designation);
-
-    if(!isNonWorkingStatus(rawStatusTxt) && rawCode!=='WO'){
-      noFirstCall = rule && rule.method==='First Call to Log out' && (firstCallVal==null || firstCallVal==='');
-      if(noFirstCall){
-        computed = {code:'AB', early:false};
-        if(rawCode && rawCode!=='AB'){
-          diffs.push({empCode,name,designation,branch,date,rawStatus:rawCode,computedStatus:'AB',durationHrs,
-            reason:`${designation} is timed "First Call to Log out" but no First Call Time is recorded in the Daily Performance Report — marked Absent regardless of raw status or duration (never P1).`});
+  /* ---------- Employee master + holiday lists ---------- */
+  function parseMaster(wb) {
+    let master = null; const holidayLists = [];
+    for (const ws of wb) {
+      // find header row in first 6 rows
+      let hdrRow = 0, h = [];
+      for (let r = 1; r <= Math.min(ws.rowCount, 6) && !hdrRow; r++) {
+        const vals = rowVals(ws, r).map(v => clean(txt(v)).toLowerCase());
+        if (vals.includes('name') && (vals.includes('company') || vals.includes('state'))) { hdrRow = r; h = vals; }
+        else if (vals.some(x => x === 'date') && vals.some(x => x.startsWith('holiday'))) { hdrRow = -r; h = vals; }
+      }
+      if (hdrRow > 0 && !master) {
+        const ci = n => h.findIndex(x => x === n);
+        const codeIdx = h.findIndex(x => /emp(loyee)?\s*(code|id)/.test(x));
+        const c = { name: ci('name'), company: ci('company'), state: ci('state'), phone: h.findIndex(x => x.startsWith('phone') || x.startsWith('mobile')), code: codeIdx, doj: h.findIndex(x => x === 'doj' || x.includes('joining')) };
+        const list = [];
+        for (let r = hdrRow + 1; r <= ws.rowCount; r++) {
+          const v = rowVals(ws, r);
+          const name = clean(txt(v[c.name]));
+          if (!name) continue;
+          list.push({
+            name, company: clean(txt(v[c.company])), state: clean(txt(v[c.state])),
+            phone: c.phone >= 0 ? clean(txt(v[c.phone])) : '',
+            code: c.code >= 0 ? clean(txt(v[c.code])).toUpperCase() : '',
+            doj: c.doj >= 0 ? parseDateCell(v[c.doj]) : null,
+            idx: list.length
+          });
         }
-        finalCode='AB';
-      } else {
-        computed = computeStatus(durationHrs, rule);
-        if(rule && computed.code && rawCode && computed.code!==rawCode){
-          diffs.push({empCode,name,designation,branch,date,rawStatus:rawCode,computedStatus:computed.code,durationHrs,
-            reason:`Raw report says ${rawCode}, but ${durationHrs.toFixed(2)} hrs against the ${designation} rule (Full≥${rule.full}h, Half≥${rule.hdMin}h, Absent<${rule.absentBelow}h) computes to ${computed.code}.`});
+        master = { sheet: ws.name, list };
+      } else if (hdrRow < 0 || /holiday/i.test(ws.name)) {
+        const r0 = Math.abs(hdrRow) || 1;
+        const hh = rowVals(ws, r0).map(v => clean(txt(v)).toLowerCase());
+        const di = hh.findIndex(x => x === 'date');
+        const ni = hh.findIndex(x => x.startsWith('holiday'));
+        const items = [];
+        for (let r = r0 + 1; r <= ws.rowCount; r++) {
+          const v = rowVals(ws, r);
+          const k = parseDateCell(v[di >= 0 ? di : 2]);
+          if (k) items.push({ key: k, name: clean(txt(v[ni >= 0 ? ni : 1])) });
         }
-        if(!rule){
-          diffs.push({empCode,name,designation,branch,date,rawStatus:rawCode,computedStatus:'NO RULE',durationHrs,
-            reason:`No attendance rule defined for designation "${designation}" — add one in Step 1.`});
-        }
-        finalCode = rawCode || computed.code;
+        const label = clean(ws.name.replace(/holiday\s*list/i, '')).replace(/^[-\s]+/, '') || ws.name;
+        holidayLists.push({ id: ws.name, label, items });
       }
     }
-
-    // late-cutoff override (e.g. "HD if Log-in after 11:30 AM")
-    let lateFlag=false;
-    const cutoff = rule? lateCutoffFromNote(rule.note) : null;
-    if(cutoff!=null && finalCode==='P'){
-      const inHr = parseTimeOfDay(inTimeVal);
-      if(inHr!=null && inHr>cutoff){
-        lateFlag=true;
-        diffs.push({empCode,name,designation,branch,date,rawStatus:finalCode,computedStatus:'HD',durationHrs,
-          reason:`Late-login rule for ${designation}: logged in after the cutoff in "${rule.note}" — downgraded to Half Day.`});
-        finalCode='HD';
-      }
-    }
-
-    // activity cross-check (prefer Emp Code match, fall back to Name)
-    let pings=0, km=0;
-    let rec=null;
-    if(state.actIndexByEmp && empCode && state.actIndexByEmp.has(empCode)) rec = state.actIndexByEmp.get(empCode).get(date);
-    if(!rec && state.actIndex){ const byDate=state.actIndex.get(normName(name)); rec = byDate? byDate.get(date): null; }
-    if(rec){ pings=rec.pings; km=+rec.km.toFixed(2); }
-    const hasActivityData = !!(state.actIndexByEmp || state.actIndex);
-    if(hasActivityData && (finalCode==='P'||finalCode==='HD')){
-      if(!rec){
-        flags.push({empCode,name,designation,branch,date,finalCode,durationHrs,pings:0,km:0,
-          reasonType:'no_activity', reason:`Marked ${finalCode} (${durationHrs.toFixed(1)} hrs) but no GPS activity record found for this date at all.`});
-      } else if(pings<minPings || km<minKm){
-        flags.push({empCode,name,designation,branch,date,finalCode,durationHrs,pings,km,
-          reasonType:'low_activity', reason:`Marked ${finalCode} (${durationHrs.toFixed(1)} hrs) but only ${pings} GPS ping(s) and ${km.toFixed(2)} km travelled — below the ${minPings} pings / ${minKm} km expected.`});
-      }
-    }
-    if(computed.code && rawCode && computed.code!==rawCode && rule && !noFirstCall){
-      flags.push({empCode,name,designation,branch,date,finalCode,durationHrs,pings,km,
-        reasonType:'rule_mismatch', reason:`Raw status ${rawCode} doesn't match rule-computed ${computed.code} for ${durationHrs.toFixed(2)} hrs worked.`});
-    }
-
-    // ---- Beat Coverage & Market Working compliance (P / P1 / P2 / P3) ----
-    let beatCode=null, beatReason='';
-    const totalKmUsed = !isNaN(rawTotalKm) ? rawTotalKm : km;
-    if(finalCode==='P'){
-      const beatRule = findBeatRule(designation);
-      const minHours = beatRule? beatRule.minHours : 4.5;
-      const noLogout = (outTimeVal==null || outTimeVal==='') && (inTimeVal!=null && inTimeVal!=='');
-      if(noLogout){
-        beatCode='P3';
-        beatReason=`No manual logout recorded by end of working hours (Out Time missing).`;
-      } else if(!isNaN(totalKmUsed) && totalKmUsed>beatRadius){
-        beatCode='P1';
-        beatReason=`Worked outside the approved ${beatRadius} km beat radius — ${totalKmUsed.toFixed(2)} km covered.`;
-      } else if(durationHrs<minHours){
-        beatCode='P2';
-        beatReason=`Minimum market working hours not completed — ${durationHrs.toFixed(2)} hrs against a ${minHours} hr requirement for ${designation}.`;
-      } else {
-        beatCode='P';
-      }
-      if(beatCode!=='P'){
-        finalCode=beatCode;
-        flags.push({empCode,name,designation,branch,date,finalCode,durationHrs,pings,km,
-          reasonType: beatCode==='P1'?'radius_deviation': beatCode==='P2'?'min_hours_not_met':'no_logout',
-          reason:beatReason});
-      }
-    }
-
-    processed.push({empCode,name,designation,branch,reportingHead,date,day,
-      rawStatus:rawCode, computedStatus:computed.code, finalCode, durationHrs,
-      early:computed.early, lateFlag, pings, km, totalKm: isNaN(totalKmUsed)?0:totalKmUsed,
-      beatCode, beatReason, noLogout: (outTimeVal==null||outTimeVal===''),
-      empStatus: map.empStatus!=null? r[map.empStatus]: '',
-      state: map.state!=null? r[map.state] : '',
-      raw: r
-    });
-  });
-
-  // ---- Inactive-employee handling (based on Users.xls current status) ----
-  // A DPR export typically fills every date with SOME status text (even "Not Logged In") even for
-  // dates after someone left, so a blank-cell check alone won't catch it. Instead: for anyone whose
-  // current status is Inactive, find their last real worked day (P/HD) in this period. Dates after
-  // that get relabelled INACTIVE instead of Absent; if they never had a real worked day at all in
-  // this period, they're excluded entirely below.
-  const byEmpForInactive = new Map();
-  processed.forEach(r=>{
-    if(!byEmpForInactive.has(r.empCode)) byEmpForInactive.set(r.empCode, []);
-    byEmpForInactive.get(r.empCode).push(r);
-  });
-  const noRealWorkInactive = new Set();
-  byEmpForInactive.forEach((rows, empCode)=>{
-    const statusTxt = (rows.find(r=>r.empStatus)?.empStatus||'').toString().trim().toLowerCase();
-    if(statusTxt!=='inactive') return;
-    let lastWorked=null, lastWorkedStr='';
-    rows.forEach(r=>{
-      if(r.finalCode==='P'||r.finalCode==='HD'){
-        const d=parseNormDate(r.date);
-        if(d && (!lastWorked || d>lastWorked)){ lastWorked=d; lastWorkedStr=r.date; }
-      }
-    });
-    if(!lastWorked){ noRealWorkInactive.add(empCode); return; }
-    rows.forEach(r=>{
-      const d=parseNormDate(r.date);
-      if(d && d>lastWorked && r.finalCode!=='NA'){
-        r.finalCode='INACTIVE';
-        r.beatReason=`Employee is marked Inactive — last active day this period was ${lastWorkedStr}.`;
-      }
-    });
-  });
-  const inactiveOverrideKeys = new Set();
-  processed.forEach(r=>{ if(r.finalCode==='INACTIVE') inactiveOverrideKeys.add(r.empCode+'|'+r.date); });
-
-  // Employees with zero genuine activity anywhere in this period shouldn't appear at all —
-  // showing a month of "Absent" for someone who was never active in it is misleading.
-  // Employees who transitioned mid-period (joined late / went inactive partway) keep their real days
-  // and get "NA" (no record at all) or "INACTIVE" (past their last active day), instead of Absent.
-  const hideInactive = document.getElementById('setHideInactive') ? document.getElementById('setHideInactive').checked : true;
-  const anyReal = new Map();
-  processed.forEach(r=>{
-    if(r.finalCode!=='NA') anyReal.set(r.empCode, true);
-    else if(!anyReal.has(r.empCode)) anyReal.set(r.empCode, false);
-  });
-  const excluded = hideInactive
-    ? new Set([...[...anyReal.entries()].filter(([k,v])=>!v).map(([k])=>k), ...noRealWorkInactive])
-    : new Set();
-  state.excludedEmpCodes = excluded;
-  state.excludedCount = excluded.size;
-
-  state.processed = processed.filter(r=> !excluded.has(r.empCode));
-  state.diffs = diffs.filter(d=> !excluded.has(d.empCode) && !inactiveOverrideKeys.has(d.empCode+'|'+d.date));
-  state.flags = flags.filter(f=> !excluded.has(f.empCode) && !inactiveOverrideKeys.has(f.empCode+'|'+f.date));
-  state.rawRowsFiltered = state.rawRows.filter(r=> !excluded.has(r[map.empCode]));
-  state.desigList=[...desigSet].sort();
-
-  renderDashboard();
-  markDone('upload');
-  goToStep('dashboard');
-  document.getElementById('btnExport').disabled=false;
-  document.getElementById('btnEmailText').disabled=false;
-  toast(`Audit complete — ${state.processed.length.toLocaleString()} rows processed, ${state.flags.length} flagged for verification.` +
-    (state.excludedCount? ` ${state.excludedCount} employee(s) hidden — no activity anywhere in this period.` : ''));
-}
-
-/* =========================================================
-   DASHBOARD RENDER
-   ========================================================= */
-function renderDashboard(){
-  const p=state.processed;
-  const counts={P:0,HD:0,AB:0,WO:0,P1:0,P2:0,P3:0,NA:0,INACTIVE:0,other:0};
-  p.forEach(r=>{
-    if(counts[r.finalCode]!=null) counts[r.finalCode]++; else counts.other++;
-  });
-  const kpis=[
-    {label:'Total records', val:p.length, cls:''},
-    {label:'Present', val:counts.P, cls:'green'},
-    {label:'Half Day', val:counts.HD, cls:'blue'},
-    {label:'Absent', val:counts.AB, cls:'red'},
-    {label:'Weekly Off / Leave', val:counts.WO, cls:''},
-    {label:'No record (joined/left mid-period)', val:counts.NA, cls:''},
-    {label:'Inactive (past last active day)', val:counts.INACTIVE, cls:''},
-    {label:'Radius deviation (P1)', val:counts.P1, cls:'red'},
-    {label:'Hours not met (P2)', val:counts.P2, cls:'red'},
-    {label:'No logout (P3)', val:counts.P3, cls:'red'},
-    {label:'Flagged for verification', val:state.flags.length, cls:'amber'},
-    {label:'Employees hidden (inactive)', val:state.excludedCount||0, cls:''},
-  ];
-  document.getElementById('kpiGrid').innerHTML = kpis.map(k=>`
-    <div class="kpi ${k.cls}"><div class="kpi-val">${k.val.toLocaleString()}</div><div class="kpi-label">${k.label}</div></div>
-  `).join('');
-  document.getElementById('excludedHint').textContent = state.excludedCount
-    ? `${state.excludedCount} employee(s) hidden from the last run — no activity anywhere in this period.`
-    : '';
-
-  // ticker
-  const track=document.getElementById('tickerTrack');
-  document.getElementById('tickerCount').textContent = state.flags.length+' record(s)';
-  if(!state.flags.length){
-    track.innerHTML=`<div class="ticker-empty">Nothing flagged — every Present/Half-Day record has matching GPS activity and rule agreement. 🎉</div>`;
-  } else {
-    track.innerHTML = state.flags.slice(0,40).map(f=>`
-      <div class="ticker-item">
-        <div class="t-emp">${escapeHtml(f.empCode)} · ${escapeHtml(f.date)}</div>
-        <div class="t-reason">${escapeHtml(f.name)} — ${escapeHtml(f.reason)}</div>
-      </div>
-    `).join('');
+    if (!master) throw new Error('Employee Master sheet not found (need columns "Name" and "Company").');
+    return { master, holidayLists };
   }
 
-  // filter dropdown
-  const desigSel=document.getElementById('fltDesig');
-  desigSel.innerHTML='<option value="">All designations</option>'+state.desigList.map(d=>`<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`).join('');
-
-  renderFlagsTable();
-}
-['fltSearch','fltDesig','fltReason'].forEach(id=>{
-  document.getElementById(id).addEventListener('input',renderFlagsTable);
-  document.getElementById(id).addEventListener('change',renderFlagsTable);
-});
-function renderFlagsTable(){
-  const q=(document.getElementById('fltSearch').value||'').toLowerCase();
-  const dq=document.getElementById('fltDesig').value;
-  const rq=document.getElementById('fltReason').value;
-  const body=document.getElementById('flagsBody');
-  const rows=state.flags.filter(f=>{
-    if(dq && f.designation!==dq) return false;
-    if(rq && f.reasonType!==rq) return false;
-    if(q && !((f.name||'').toLowerCase().includes(q) || (f.empCode||'').toString().toLowerCase().includes(q))) return false;
-    return true;
-  });
-  if(!rows.length){
-    body.innerHTML=`<tr><td colspan="10"><div class="empty-state"><div class="big">✓</div>No flagged records match this filter.</div></td></tr>`;
-    return;
-  }
-  body.innerHTML = rows.map(f=>`
-    <tr>
-      <td class="mono">${escapeHtml(f.empCode)}</td>
-      <td>${escapeHtml(f.name)}</td>
-      <td>${escapeHtml(f.designation)}</td>
-      <td>${escapeHtml(f.branch)}</td>
-      <td class="mono">${escapeHtml(f.date)}</td>
-      <td><span class="badge ${f.finalCode}">${escapeHtml(f.finalCode||'-')}</span></td>
-      <td class="mono">${f.durationHrs.toFixed(2)}h</td>
-      <td class="mono">${f.pings}</td>
-      <td class="mono">${f.km.toFixed(2)} km</td>
-      <td><span class="sev">⚠ ${escapeHtml(f.reason)}</span></td>
-    </tr>
-  `).join('');
-}
-
-/* =========================================================
-   FORMULA EXPLANATION TEXT
-   ========================================================= */
-function explainRule(r){
-  let s = `${r.desig}: timing measured "${r.method}". `;
-  if(r.method==='First Call to Log out') s += `If no First Call Time is recorded in the Daily Performance Report, it's marked Absent regardless of any other data — it never becomes P or a beat-compliance status. `;
-  s += `Marked Full Day (P) if total working time is ${r.full} hours or more. `;
-  if(r.hdMin!=null) s += `Marked Half Day (HD) if between ${r.hdMin} and ${r.hdMax===Infinity?'∞':r.hdMax} hours. `;
-  s += `Marked Absent (AB) if under ${r.absentBelow} hours. `;
-  if(r.egMin!=null) s += `Flagged as "Early Going" (note only, status unchanged) if duration falls between ${r.egMin} and ${r.egMax} hours. `;
-  if(r.note) s += `Special rule: ${r.note}.`;
-  return s.trim();
-}
-function explainBeatRule(r, beatRadius){
-  return `${r.desig}: a Full Day (P) is only kept as plain "P" if the employee stayed within the ${beatRadius} km beat radius, `+
-    `logged a manual logout, and completed at least ${r.minHours} market working hours. Otherwise it's downgraded to `+
-    `P1 (worked beyond the ${beatRadius} km radius), P2 (under ${r.minHours} hrs of market work), or P3 (no manual logout recorded) — `+
-    `checked in that priority order.`;
-}
-
-/* =========================================================
-   EXPORT — ExcelJS multi-sheet workbook
-   ========================================================= */
-const FILL = {
-  P:'FFF5F5F7', HD:'FFEAEAEF', AB:'FFFFEBE9', WO:'FFF5F5F7', NA:'FFFCFCFC', INACTIVE:'FFFCFCFC',
-  P1:'FFFFEBE9', P2:'FFFFEBE9', P3:'FFFFEBE9', flag:'FFFFEBE9'
-};
-const FONT_COLOR = {
-  P:'FF1D1D1F', HD:'FF48484A', AB:'FFFF3B30', WO:'FF86868B', NA:'FFC7C7CC', INACTIVE:'FFC7C7CC',
-  P1:'FFFF3B30', P2:'FFFF3B30', P3:'FFFF3B30', flag:'FFFF3B30'
-};
-
-document.getElementById('btnExport').addEventListener('click', exportWorkbook);
-
-async function exportWorkbook(){
-  showLoader('Building workbook…', 'Assembling 5 sheets with your latest rules');
-  await nextFrame();
-  const wb = new ExcelJS.Workbook();
-  wb.creator='Smartverse';
-  wb.created=new Date();
-
-  const HEAD_FILL = {type:'pattern',pattern:'solid',fgColor:{argb:'FF1D1D1F'}};
-  const HEAD_FONT = {color:{argb:'FFFFFFFF'}, bold:true, size:10};
-  function styleHeader(ws,row){
-    row.eachCell(c=>{ c.fill=HEAD_FILL; c.font=HEAD_FONT; c.alignment={vertical:'middle'}; });
-    row.height=20;
-  }
-
-  /* ---- Sheet 1: Final Report (matrix) ---- */
-  const ws1 = wb.addWorksheet('Final Report');
-  const dates = [...new Set(state.processed.map(r=>r.date))].sort((a,b)=>{
-    const pa=a.split('-').reverse().join(''), pb=b.split('-').reverse().join('');
-    return pa.localeCompare(pb);
-  });
-  const empKey = r => r.empCode+'|'+r.name;
-  const empMap = new Map();
-  state.processed.forEach(r=>{
-    const k=empKey(r);
-    if(!empMap.has(k)) empMap.set(k,{empCode:r.empCode,name:r.name,designation:r.designation,branch:r.branch,reportingHead:r.reportingHead,state:r.state,empStatus:r.empStatus,byDate:{}});
-    empMap.get(k).byDate[r.date]=r.finalCode||'';
-  });
-  ws1.columns = [
-    {header:'Emp Code',key:'empCode',width:12},
-    {header:'Name',key:'name',width:24},
-    {header:'Designation',key:'designation',width:20},
-    {header:'Branch',key:'branch',width:16},
-    {header:'Reporting Head',key:'reportingHead',width:20},
-    {header:'State',key:'state',width:14},
-    {header:'Current Status',key:'empStatus',width:14},
-    ...dates.map(d=>({header:d,key:d,width:8}))
-  ];
-  styleHeader(ws1, ws1.getRow(1));
-  [...empMap.values()].forEach(e=>{
-    const row={empCode:e.empCode,name:e.name,designation:e.designation,branch:e.branch,reportingHead:e.reportingHead,state:e.state,empStatus:e.empStatus};
-    dates.forEach(d=> row[d]=e.byDate[d]||'');
-    const r=ws1.addRow(row);
-    dates.forEach(d=>{
-      const cell=r.getCell(d);
-      const code=e.byDate[d];
-      if(FILL[code]){
-        cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:FILL[code]}};
-        cell.font={color:{argb:FONT_COLOR[code]},bold:true};
-        cell.alignment={horizontal:'center'};
+  /* ---------- state -> holiday list mapping ---------- */
+  const STATE_ALIAS = { UTTARPRADESH: 'UP', ORISSA: 'ODISHA', NORTHBENGAL: 'WESTBENGAL', WB: 'WESTBENGAL' };
+  function letters(s) { return String(s || '').toUpperCase().replace(/[^A-Z]/g, ''); }
+  function guessHolidayList(state, lists) {
+    let sk = letters(state);
+    Object.keys(STATE_ALIAS).forEach(a => { if (sk.includes(a)) sk = sk + '|' + STATE_ALIAS[a]; });
+    const parts = sk.split('|');
+    for (const l of lists) {
+      const lk = letters(l.label);
+      if (!lk) continue;
+      for (const p of parts) {
+        if (lk.length <= 3) { if (p === lk) return l.id; }
+        else if (p.includes(lk) || (p.length > 3 && lk.includes(p))) return l.id;
       }
-    });
-  });
-  ws1.views=[{state:'frozen',xSplit:7,ySplit:1}];
-
-  /* ---- Sheet 2: Raw Report ---- */
-  const ws2 = wb.addWorksheet('Raw Report');
-  const map=state.rawHeaderMap;
-  const rawHeaders = Object.keys(map).sort((a,b)=>map[a]-map[b]);
-  ws2.columns = rawHeaders.map(h=>({header:h,key:h,width:16}));
-  styleHeader(ws2, ws2.getRow(1));
-  (state.rawRowsFiltered || state.rawRows).forEach(r=>{
-    const row={};
-    rawHeaders.forEach(h=> row[h]=r[map[h]]);
-    ws2.addRow(row);
-  });
-
-  /* ---- Sheet 3: Formula Explanation ---- */
-  const ws3 = wb.addWorksheet('Formula Explanation');
-  ws3.columns=[{header:'Designation',key:'d',width:26},{header:'Plain-language rule',key:'e',width:110}];
-  styleHeader(ws3, ws3.getRow(1));
-  ws3.addRow({d:'— Attendance Status —', e:''});
-  state.rules.forEach(r=>{
-    ws3.addRow({d:r.desig, e:explainRule(r)});
-  });
-  const beatRadiusVal = parseFloat(document.getElementById('setBeatRadius').value)||7;
-  ws3.addRow({d:'', e:''});
-  ws3.addRow({d:'— Beat Coverage & Market Working —', e:`Beat radius is ${beatRadiusVal} km for every designation. Activity within this radius is approved beat working; beyond it is a radius deviation.`});
-  state.beatRules.forEach(r=>{
-    ws3.addRow({d:r.desig, e:explainBeatRule(r, beatRadiusVal)});
-  });
-  ws3.addRow({d:'', e:''});
-  ws3.addRow({d:'— Employee Visibility —', e:`A date with no In-Time, Out-Time or Status recorded at all is marked "NA". For anyone currently marked Inactive in the Users file, dates after their last real worked day (Present/Half Day) this period are marked "INACTIVE" instead of Absent. Neither NA nor INACTIVE is ever counted as Absent. An Inactive employee with zero real worked days anywhere in this period is left out of this workbook entirely` +
-    (state.excludedCount? ` — ${state.excludedCount} such employee(s) were hidden from this export.` : '.')});
-  ws3.getColumn('e').alignment={wrapText:true, vertical:'top'};
-
-  /* ---- Sheet 4: Differences ---- */
-  const ws4 = wb.addWorksheet('Differences');
-  ws4.columns=[
-    {header:'Emp Code',key:'empCode',width:12},{header:'Name',key:'name',width:22},
-    {header:'Designation',key:'designation',width:20},{header:'Branch',key:'branch',width:14},
-    {header:'Date',key:'date',width:12},{header:'Raw Status',key:'rawStatus',width:12},
-    {header:'Computed Status',key:'computedStatus',width:15},{header:'Duration (hrs)',key:'durationHrs',width:13},
-    {header:'Reason',key:'reason',width:80}
-  ];
-  styleHeader(ws4, ws4.getRow(1));
-  state.diffs.forEach(d=> ws4.addRow({...d, durationHrs:d.durationHrs?.toFixed?.(2)}));
-  ws4.getColumn('reason').alignment={wrapText:true,vertical:'top'};
-
-  /* ---- Sheet 5: Activity Verification ---- */
-  const ws5 = wb.addWorksheet('Activity Verification');
-  ws5.columns=[
-    {header:'Emp Code',key:'empCode',width:12},{header:'Name',key:'name',width:22},
-    {header:'Designation',key:'designation',width:20},{header:'Branch',key:'branch',width:14},
-    {header:'State',key:'state',width:13},{header:'Date',key:'date',width:12},{header:'Day',key:'day',width:11},
-    {header:'Final Status',key:'finalCode',width:11},
-    {header:'Duration (hrs)',key:'durationHrs',width:13},{header:'GPS Pings',key:'pings',width:10},
-    {header:'GPS Distance (km)',key:'km',width:14},{header:'Total KM (raw)',key:'totalKm',width:13},
-    {header:'Beat Status',key:'beatCode',width:11},{header:'Needs Verification?',key:'flag',width:16},
-    {header:'Reason',key:'reason',width:80}
-  ];
-  styleHeader(ws5, ws5.getRow(1));
-  const flagByKey = new Map(state.flags.map(f=>[f.empCode+'|'+f.date, f]));
-  state.processed.forEach(r=>{
-    const f = flagByKey.get(r.empCode+'|'+r.date);
-    const row=ws5.addRow({
-      empCode:r.empCode, name:r.name, designation:r.designation, branch:r.branch, state:r.state, date:r.date, day:r.day,
-      finalCode:r.finalCode, durationHrs:r.durationHrs.toFixed(2), pings:r.pings, km:r.km.toFixed(2),
-      totalKm:(r.totalKm||0).toFixed(2), beatCode:r.beatCode||'',
-      flag: f? 'YES':'', reason: f? f.reason : ''
-    });
-    if(f){
-      row.eachCell(c=>{ c.fill={type:'pattern',pattern:'solid',fgColor:{argb:FILL.flag}}; });
-      row.getCell('flag').font={color:{argb:FONT_COLOR.flag},bold:true};
     }
-  });
-  ws5.getColumn('reason').alignment={wrapText:true,vertical:'top'};
-  ws5.autoFilter = {from:'A1', to:'O1'};
+    return '';
+  }
 
-  /* ---- Sheet 6: Verify — employees with doubt / rule breaches ---- */
-  const ws6 = wb.addWorksheet('Verify');
-  const empInfo = new Map();
-  state.processed.forEach(r=>{
-    if(!empInfo.has(r.empCode)) empInfo.set(r.empCode, {name:r.name, designation:r.designation, branch:r.branch, reportingHead:r.reportingHead, state:r.state, empStatus:r.empStatus});
-  });
-  const REASON_LABEL = {
-    rule_mismatch:'Rule mismatch', no_activity:'No GPS activity', low_activity:'Low GPS activity',
-    radius_deviation:'Beat radius deviation (P1)', min_hours_not_met:'Min market hours not met (P2)', no_logout:'No manual logout (P3)'
+  /* ---------- name matching ---------- */
+  function normName(s) {
+    return clean(String(s).toUpperCase().replace(/INACTIVE.*$/, '').replace(/[^A-Z ]/g, ' '))
+      .replace(/\bKR\b/g, 'KUMAR').replace(/\bMD\b/g, 'MD');
+  }
+  function phon(s) {
+    return s.replace(/ /g, '').replace(/SH/g, 'S').replace(/BH/g, 'B').replace(/V/g, 'B').replace(/W/g, 'B')
+      .replace(/PH/g, 'F').replace(/TH/g, 'T').replace(/DH/g, 'D').replace(/KH/g, 'K').replace(/GH/g, 'G')
+      .replace(/EE/g, 'I').replace(/OO/g, 'U').replace(/Y/g, 'I').replace(/Z/g, 'J').replace(/(.)\1+/g, '$1');
+  }
+  function damerau(a, b) {
+    const d = [];
+    for (let i = 0; i <= a.length; i++) { d[i] = [i]; }
+    for (let j = 0; j <= b.length; j++) d[0][j] = j;
+    for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++) {
+      const c = a[i - 1] === b[j - 1] ? 0 : 1;
+      d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + c);
+      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) d[i][j] = Math.min(d[i][j], d[i - 2][j - 2] + 1);
+    }
+    return d[a.length][b.length];
+  }
+  function nameScore(a, b) {
+    const A = normName(a), B = normName(b);
+    if (!A || !B) return { s: 0 };
+    if (A === B) return { s: 1, how: 'Exact' };
+    if (A.replace(/ /g, '') === B.replace(/ /g, '')) return { s: 0.98, how: 'Spacing' };
+    const pa = phon(A), pb = phon(B);
+    if (pa === pb) return { s: 0.95, how: 'Spelling' };
+    const ta = A.split(' '), tb = B.split(' ');
+    const [sh, lo] = ta.length <= tb.length ? [ta, tb] : [tb, ta];
+    if (sh.length >= 2 && sh[0] === lo[0] && sh[sh.length - 1] === lo[lo.length - 1] && sh.every(t => lo.includes(t)))
+      return { s: 0.92, how: 'Middle name' };
+    const r = 1 - damerau(pa, pb) / Math.max(pa.length, pb.length);
+    // also first+last token phonetic match
+    if (phon(sh[0]) === phon(lo[0]) && phon(sh[sh.length - 1]) === phon(lo[lo.length - 1]) && sh.length >= 2)
+      return { s: Math.max(0.9, r), how: 'Middle name' };
+    return { s: r, how: 'Similar' };
+  }
+  function matchEmployees(emps, masterList) {
+    const res = {}; const used = {};
+    const byCode = {};
+    masterList.forEach(m => { if (m.code) byCode[m.code] = m; });
+    const cands = [];
+    emps.forEach(e => {
+      if (byCode[e.code.toUpperCase()]) { res[e.code] = { idx: byCode[e.code.toUpperCase()].idx, score: 1, how: 'Emp Code' }; used[byCode[e.code.toUpperCase()].idx] = e.code; return; }
+      const scored = masterList.map(m => ({ m, ...nameScore(e.name, m.name) })).sort((x, y) => y.s - x.s);
+      e._cands = scored.slice(0, 6).map(x => ({ idx: x.m.idx, s: x.s, how: x.how }));
+      const best = scored[0];
+      if (best && (best.s >= 0.92 || (best.s >= 0.86 && best.how !== 'Similar'))) cands.push({ code: e.code, idx: best.m.idx, s: best.s, how: best.how });
+    });
+    cands.sort((a, b) => b.s - a.s).forEach(c => {
+      if (res[c.code] || used[c.idx] !== undefined) return;
+      res[c.code] = { idx: c.idx, score: c.s, how: c.how }; used[c.idx] = c.code;
+    });
+    return res;
+  }
+
+  /* ---------- build model ---------- */
+  // opts: {year, month, cutoff, leavePaid, egN, p3N, hideTest, prevBreeze, holidayMap:{state:listId}, matches:{code:idx|-1}}
+  function detectMonths(dates) {
+    const cnt = {};
+    dates.forEach(k => { const ym = k.slice(0, 7); cnt[ym] = (cnt[ym] || 0) + 1; });
+    return Object.keys(cnt).sort().map(ym => ({ ym, count: cnt[ym], label: MONTHS[+ym.slice(5) - 1] + ' ' + ym.slice(0, 4) }));
+  }
+
+  function isTestId(e) { return /^(manager|admin|test)/i.test(e.code) || /\bDEMO\b/i.test(e.rawName) || /^(MANAGER|ADMIN)$/i.test(clean(e.rawName)); }
+
+  function dayValue(type, leavePaid) {
+    return { P: 1, WO: 1, H: 1, P4: 1, EG: 1, L: leavePaid ? 1 : 0, HD: 0.5, AB: 0 }[type] ?? 0;
+  }
+
+  function buildModel(breeze, masterData, opts) {
+    const { year, month } = opts;
+    const dim = daysInMonth(year, month);
+    const cutoff = Math.min(opts.cutoff || dim, dim);
+    const ym = year + '-' + pad(month);
+    const gridDates = [];
+    for (let d = 1; d <= cutoff; d++) gridDates.push(keyOf(year, month, d));
+    const available = new Set(breeze.dates);
+    const missingDates = gridDates.filter(k => !available.has(k));
+    // previous month window
+    const py = month === 1 ? year - 1 : year, pm = month === 1 ? 12 : month - 1;
+    const pdim = daysInMonth(py, pm);
+    const prevCut = Math.min(opts.cutoff || pdim, pdim);
+    const prevDates = [];
+    for (let d = prevCut + 1; d <= pdim; d++) prevDates.push(keyOf(py, pm, d));
+    const prevDays = {}; // code -> {key: code}
+    [breeze, opts.prevBreeze].filter(Boolean).forEach(b => b.emps.forEach(e => {
+      prevDates.forEach(k => { if (e.days[k] !== undefined && e.days[k] !== '') (prevDays[e.code] = prevDays[e.code] || {})[k] = e.days[k]; });
+    }));
+
+    const lists = {};
+    masterData.holidayLists.forEach(l => { lists[l.id] = l; });
+    const holidaysFor = state => {
+      const id = opts.holidayMap[state];
+      const m = {};
+      if (id && lists[id]) lists[id].items.forEach(it => { m[it.key] = it.name; });
+      return m;
+    };
+
+    const rows = [];
+    breeze.emps.forEach(e => {
+      if (opts.hideTest && isTestId(e)) return;
+      const ns = splitName(e.rawName);
+      const mIdx = opts.matches[e.code];
+      const m = mIdx !== undefined && mIdx >= 0 ? masterData.master.list[mIdx] : null;
+      if (!m && !opts.includeUnmatched) return;
+      const locState = m && m.state ? m.state : e.state;
+      const hol = holidaysFor(stateKeyFor(locState, e.state, opts));
+      const dol = ns.dol;
+      const cells = {}; const counts = { WO: 0, H: 0, P: 0, P4: 0, L: 0, HD: 0, EG: 0, AB: 0, OTHER: 0, NA: 0, P3: 0, P5: 0, BLANK: 0 };
+      const others = new Set(); let holApplied = 0;
+      gridDates.forEach(k => {
+        let c = e.days[k] !== undefined ? e.days[k] : '';
+        if (dol && k > dol) c = '-';
+        else if (hol[k]) { if (c !== 'H') holApplied++; c = 'H'; }
+        cells[k] = c;
+        const t = classify(c);
+        counts[t]++;
+        if (t === 'OTHER') others.add(c);
+        if (c.includes('P3')) counts.P3++;
+        if (c.includes('P5')) counts.P5++;
+      });
+      const total = counts.WO + counts.H + counts.P + counts.P4 + counts.L + counts.HD + counts.EG + counts.AB;
+      const grand = gridDates.length - counts.NA - counts.BLANK;
+      const hdDed = counts.HD * 0.5;
+      const lDed = opts.leavePaid ? 0 : counts.L;
+      const egDed = opts.egN > 0 ? Math.floor(counts.EG / opts.egN) : 0;
+      const p3Ded = opts.p3N > 0 ? Math.floor(counts.P3 / opts.p3N) : 0;
+      const payable = total - counts.AB - hdDed - lDed - egDed - p3Ded;
+      // assumed days after cut-off
+      let assumed = dim - cutoff;
+      const inactive = /inactive/i.test(e.status) || !!dol;
+      const remarks = [];
+      if (dol) {
+        if (dol < keyOf(year, month, cutoff + 1 > dim ? dim : cutoff + 1) || dol.slice(0, 7) < ym) assumed = 0;
+        else if (dol.slice(0, 7) === ym) assumed = Math.max(0, +dol.slice(8) - cutoff);
+        if (dol.slice(0, 7) <= ym) remarks.push('Left on ' + fmtKey(dol));
+        else remarks.push('Inactive from ' + fmtKey(dol));
+      } else if (inactive) { assumed = 0; remarks.push('Inactive without date — assumed days set to 0, please check'); }
+      // previous month adjustment
+      let prevAdj = 0, prevSeen = 0;
+      const pd = prevDays[e.code] || {};
+      const phol = holidaysFor(stateKeyFor(locState, e.state, opts));
+      prevDates.forEach(k => {
+        if (pd[k] === undefined) return;
+        if (dol && k > dol) return;
+        let c = pd[k]; if (phol[k]) c = 'H';
+        prevSeen++;
+        prevAdj += dayValue(classify(c), opts.leavePaid) - 1;
+      });
+      if (!m) remarks.push('Not found in Employee Master');
+      else if (opts.matchInfo && opts.matchInfo[e.code] && opts.matchInfo[e.code].how && !/Exact|Emp Code/.test(opts.matchInfo[e.code].how))
+        remarks.push('Name matched to master as "' + m.name + '"');
+      if (others.size) remarks.push('Unknown code(s): ' + [...others].join(', '));
+      if (counts.BLANK && !dol) remarks.push(counts.BLANK + ' day(s) blank in report');
+      const final = payable + prevAdj + assumed;
+      rows.push({
+        state: e.state, code: e.code, name: ns.name, head: e.head.replace(/\s+/g, ' ').trim(), desig: e.desig,
+        company: m ? m.company : '', doj: m && m.doj ? m.doj : null, dol, status: inactive ? 'Inactive' : (e.status || 'Active'),
+        location: locState, cells, counts, total, grand, hdDed, lDed, egDed, p3Ded, payable, assumed, prevAdj, prevSeen, final,
+        remarks: remarks.join('; '), holApplied, matched: !!m
+      });
+    });
+    return { year, month, dim, cutoff, gridDates, prevDates: prevDates.filter(k => Object.values(prevDays).some(p => p[k] !== undefined)),
+      allPrevDates: prevDates, missingDates, rows, opts,
+      ignoredAfterCutoff: breeze.dates.filter(k => k.slice(0, 7) === ym && +k.slice(8) > cutoff) };
+  }
+  function stateKeyFor(locState, bState, opts) { return opts.holidayMap[locState] !== undefined ? locState : bState; }
+
+  /* ---------- Excel export ---------- */
+  const C = {
+    navy: 'FF0F2744', navy2: 'FF1E3A5F', white: 'FFFFFFFF', ink: 'FF1F2937', mute: 'FF6B7280', line: 'FFD5DCE6', band: 'FFF5F8FC',
+    grpDay: 'FF1D4ED8', grpFlag: 'FF7C3AED', grpDed: 'FFB91C1C', grpPay: 'FF047857', input: 'FFFFF8DB', sun: 'FFE8EEF7'
   };
-  const byEmpFlags = new Map();
-  state.flags.forEach(f=>{
-    if(!byEmpFlags.has(f.empCode)) byEmpFlags.set(f.empCode, []);
-    byEmpFlags.get(f.empCode).push(f);
-  });
-  ws6.columns=[
-    {header:'Emp Code',key:'empCode',width:12},{header:'Name',key:'name',width:22},
-    {header:'Designation',key:'designation',width:20},{header:'Branch',key:'branch',width:14},
-    {header:'Reporting Head',key:'reportingHead',width:20},{header:'State',key:'state',width:13},
-    {header:'Current Status',key:'empStatus',width:13},
-    {header:'Total Flagged Days',key:'total',width:14},
-    {header:'Radius Deviation (P1)',key:'p1',width:16},
-    {header:'Min Hours Not Met (P2)',key:'p2',width:17},
-    {header:'No Logout (P3)',key:'p3',width:13},
-    {header:'GPS Mismatch',key:'gps',width:13},
-    {header:'Rule Mismatch',key:'rule',width:13},
-    {header:'Detail (date: reason)',key:'detail',width:90}
-  ];
-  styleHeader(ws6, ws6.getRow(1));
-  const empRows = [...byEmpFlags.entries()].map(([empCode, list])=>{
-    const info = empInfo.get(empCode) || {};
-    const counts = {p1:0,p2:0,p3:0,gps:0,rule:0};
-    list.forEach(f=>{
-      if(f.reasonType==='radius_deviation') counts.p1++;
-      else if(f.reasonType==='min_hours_not_met') counts.p2++;
-      else if(f.reasonType==='no_logout') counts.p3++;
-      else if(f.reasonType==='no_activity'||f.reasonType==='low_activity') counts.gps++;
-      else if(f.reasonType==='rule_mismatch') counts.rule++;
-    });
-    const detail = list.slice()
-      .sort((a,b)=> a.date.split('-').reverse().join('').localeCompare(b.date.split('-').reverse().join('')))
-      .map(f=>`${f.date} [${REASON_LABEL[f.reasonType]||f.reasonType}]: ${f.reason}`).join('\n');
-    return {empCode, name:info.name, designation:info.designation, branch:info.branch, reportingHead:info.reportingHead,
-      state:info.state, empStatus:info.empStatus, total:list.length, p1:counts.p1, p2:counts.p2, p3:counts.p3,
-      gps:counts.gps, rule:counts.rule, detail};
-  });
-  empRows.sort((a,b)=> b.total - a.total);
-  if(!empRows.length){
-    ws6.addRow({empCode:'', name:'Nothing flagged — every record reconciled cleanly this run.'});
-  } else {
-    empRows.forEach(row=>{
-      const r = ws6.addRow(row);
-      r.getCell('total').font={bold:true, color:{argb:'FFFF3B30'}};
-    });
+  const CODE_STYLE = {
+    P: { bg: 'FFDCFCE7', fg: 'FF166534' }, AB: { bg: 'FFFEE2E2', fg: 'FFB91C1C' }, WO: { bg: 'FFE5E7EB', fg: 'FF374151' },
+    H: { bg: 'FFFEF08A', fg: 'FF713F12' }, L: { bg: 'FFC4B5FD', fg: 'FF3B0764' }, HD: { bg: 'FFFDBA74', fg: 'FF7C2D12' },
+    EG: { bg: 'FFF9A8D4', fg: 'FF831843' }, P4: { bg: 'FFDBEAFE', fg: 'FF1E40AF' }, FLAG: { bg: 'FFCCFBF1', fg: 'FF0F766E' },
+    NA: { bg: 'FFF3F4F6', fg: 'FF9CA3AF' }, OTHER: { bg: 'FFFF0000', fg: 'FFFFFFFF' }, BLANK: { bg: 'FFFFFFFF', fg: 'FF9CA3AF' }
+  };
+  function codeStyle(c) {
+    const t = classify(c);
+    if (t === 'P' && c !== 'P') return CODE_STYLE.FLAG;
+    return CODE_STYLE[t] || CODE_STYLE.OTHER;
   }
-  ws6.getColumn('detail').alignment={wrapText:true, vertical:'top'};
-  ws6.autoFilter = {from:'A1', to:'N1'};
-  ws6.views=[{state:'frozen',ySplit:1}];
+  function colL(n) { let s = ''; while (n > 0) { const m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1) / 26); } return s; }
+  function nowIST() {
+    const d = new Date(Date.now() + 330 * 60000);
+    return pad(d.getUTCDate()) + '-' + pad(d.getUTCMonth() + 1) + '-' + d.getUTCFullYear() + ' ' + pad(d.getUTCHours()) + ':' + pad(d.getUTCMinutes()) + ' IST';
+  }
 
-  const buf = await wb.xlsx.writeBuffer();
-  const blob = new Blob([buf],{type:'application/octet-stream'});
-  const url = URL.createObjectURL(blob);
-  const a=document.createElement('a');
-  a.href=url; a.download='Smartverse_Report.xlsx';
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-  hideLoader();
-  toast('Downloaded Smartverse_Report.xlsx');
+  async function exportWorkbook(ExcelJS, model, holidayLists) {
+    const wb = new ExcelJS.Workbook();
+    wb.creator = 'Attendance Builder'; wb.created = new Date();
+    const mName = MONTHS[model.month - 1];
+    const ws = wb.addWorksheet(mName.slice(0, 3) + '-' + model.year + ' Attendance', {
+      views: [{ state: 'frozen', xSplit: 3, ySplit: 4, zoomScale: 90, showGridLines: false }],
+      properties: { defaultRowHeight: 18 },
+      pageSetup: { orientation: 'landscape', paperSize: 9, fitToPage: true, fitToWidth: 1, fitToHeight: 0 }
+    });
+    const ID = ['State', 'Emp Code', 'Name', 'Reporting Head', 'Designation', 'Company', 'DOJ', 'DOL', 'Status'];
+    const idW = [14, 13, 26, 24, 17, 11, 11, 11, 9];
+    const nD = model.gridDates.length;
+    const d0 = ID.length + 1; // first date col
+    const cut = model.cutoff, dim = model.dim;
+    const prevLbl = model.allPrevDates.length ? shortKey(model.allPrevDates[0]) + ' to ' + shortKey(model.allPrevDates[model.allPrevDates.length - 1]) : '—';
+    const asLbl = cut < dim ? pad(cut + 1) + '/' + pad(model.month) + ' to ' + pad(dim) + '/' + pad(model.month) : '—';
+    const SUM = [
+      { k: 'grand', h: 'Grand Total', g: 'DAY COUNT', w: 8 },
+      { k: 'WO', h: 'WO', g: 'DAY COUNT' }, { k: 'H', h: 'Holiday', g: 'DAY COUNT' }, { k: 'P', h: 'Present', g: 'DAY COUNT' },
+      { k: 'P4', h: 'WO Worked (P4)', g: 'DAY COUNT' }, { k: 'L', h: 'Leave Taken', g: 'DAY COUNT' }, { k: 'HD', h: 'Half Day', g: 'DAY COUNT' },
+      { k: 'EG', h: 'Early Going', g: 'DAY COUNT' }, { k: 'AB', h: 'Absent', g: 'DAY COUNT' }, { k: 'total', h: 'TOTAL', g: 'DAY COUNT' },
+      { k: 'P3', h: 'No Logout (P3)', g: 'FLAGS' }, { k: 'P5', h: 'No First Call (P5)', g: 'FLAGS' },
+      { k: 'hdDed', h: 'Half Day Deduction', g: 'DEDUCTIONS' }, { k: 'lDed', h: 'Leave Deduction', g: 'DEDUCTIONS' },
+      { k: 'egDed', h: 'Early Going Deduction', g: 'DEDUCTIONS' }, { k: 'p3Ded', h: 'Auto Logout Deduction', g: 'DEDUCTIONS' },
+      { k: 'payable', h: 'Payable Days as per Breeze', g: 'PAYABLE', w: 11 }, { k: 'other', h: 'Other Adjustment', g: 'PAYABLE', input: 1 },
+      { k: 'mela', h: 'MELA - EDF', g: 'PAYABLE', input: 1 }, { k: 'prevAdj', h: 'Previous Month ' + prevLbl + ' Status', g: 'PAYABLE', w: 12, input: 1 },
+      { k: 'assumed', h: mName + ' ' + asLbl + ' (Assumed)', g: 'PAYABLE', w: 12 }, { k: 'final', h: 'Final Payable Days', g: 'PAYABLE', w: 11 },
+      { k: 'remarks', h: 'Remarks', g: 'PAYABLE', w: 44 }
+    ];
+    const s0 = d0 + nD; // first summary col
+    const SC = {}; SUM.forEach((s, i) => { SC[s.k] = s0 + i; });
+    const lastCol = s0 + SUM.length - 1;
+    const GROUP_COL = { 'DAY COUNT': C.grpDay, FLAGS: C.grpFlag, DEDUCTIONS: C.grpDed, PAYABLE: C.grpPay };
+    const thin = { style: 'thin', color: { argb: C.line } };
+    const box = { top: thin, left: thin, bottom: thin, right: thin };
+    const fill = a => ({ type: 'pattern', pattern: 'solid', fgColor: { argb: a } });
+
+    // widths
+    idW.forEach((w, i) => { ws.getColumn(i + 1).width = w; });
+    for (let i = 0; i < nD; i++) ws.getColumn(d0 + i).width = 6.2;
+    SUM.forEach((s, i) => { ws.getColumn(s0 + i).width = s.w || 9.5; });
+
+    // Title rows
+    ws.mergeCells(1, 1, 1, lastCol);
+    const t = ws.getCell(1, 1);
+    t.value = 'PAYROLL ATTENDANCE REGISTER  —  ' + mName.toUpperCase() + ' ' + model.year;
+    t.font = { name: 'Calibri', size: 16, bold: true, color: { argb: C.white } };
+    t.fill = fill(C.navy); t.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
+    ws.getRow(1).height = 30;
+    ws.mergeCells(2, 1, 2, lastCol);
+    const st = ws.getCell(2, 1);
+    st.value = 'Attendance period: ' + fmtKey(model.gridDates[0]) + ' to ' + fmtKey(model.gridDates[nD - 1]) +
+      '     |     Source: Breeze Attendance Summary Report + Employee Master     |     Employees: ' + model.rows.length +
+      '     |     Generated on: ' + nowIST();
+    st.font = { name: 'Calibri', size: 10, color: { argb: 'FFCBD5E1' } };
+    st.fill = fill(C.navy2); st.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
+    ws.getRow(2).height = 20;
+
+    // Row 3: groups / day names ; Row 4: headers
+    ws.getRow(3).height = 18; ws.getRow(4).height = 54;
+    ws.mergeCells(3, 1, 3, ID.length);
+    const ec = ws.getCell(3, 1); ec.value = 'EMPLOYEE DETAILS';
+    ec.font = { bold: true, size: 9, color: { argb: C.white } }; ec.fill = fill('FF334155'); ec.alignment = { horizontal: 'center', vertical: 'middle' };
+    ID.forEach((h, i) => {
+      const c = ws.getCell(4, i + 1); c.value = h;
+      c.font = { bold: true, size: 10, color: { argb: C.white } }; c.fill = fill(C.navy);
+      c.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }; c.border = box;
+    });
+    model.gridDates.forEach((k, i) => {
+      const dw = dowOf(k);
+      const c3 = ws.getCell(3, d0 + i); c3.value = DAYS[dw].slice(0, 3);
+      c3.font = { bold: true, size: 9, color: { argb: dw === 0 ? 'FFB91C1C' : C.white } };
+      c3.fill = fill(dw === 0 ? 'FFFDE2E2' : 'FF334155'); c3.alignment = { horizontal: 'center', vertical: 'middle' }; c3.border = box;
+      const c4 = ws.getCell(4, d0 + i); c4.value = fmtKey(k);
+      c4.font = { bold: true, size: 9, color: { argb: C.white } }; c4.fill = fill(dw === 0 ? 'FF7F1D1D' : C.navy);
+      c4.alignment = { horizontal: 'center', vertical: 'middle', textRotation: 90 }; c4.border = box;
+    });
+    // group bands
+    let gi = 0;
+    while (gi < SUM.length) {
+      let gj = gi; while (gj + 1 < SUM.length && SUM[gj + 1].g === SUM[gi].g) gj++;
+      ws.mergeCells(3, s0 + gi, 3, s0 + gj);
+      const gc = ws.getCell(3, s0 + gi); gc.value = SUM[gi].g;
+      gc.font = { bold: true, size: 9, color: { argb: C.white } }; gc.fill = fill(GROUP_COL[SUM[gi].g]);
+      gc.alignment = { horizontal: 'center', vertical: 'middle' };
+      gi = gj + 1;
+    }
+    SUM.forEach((s, i) => {
+      const c = ws.getCell(4, s0 + i); c.value = s.h;
+      const base = GROUP_COL[s.g];
+      c.font = { bold: true, size: 9, color: { argb: s.input ? 'FF78350F' : C.white } };
+      c.fill = fill(s.input ? 'FFFDE68A' : base);
+      if (s.k === 'final') c.fill = fill('FF065F46');
+      c.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }; c.border = box;
+    });
+
+    // rules block location (after data + totals + gap)
+    const firstData = 5, lastData = 4 + model.rows.length, totRow = lastData + 1;
+    const ruleTop = totRow + 3;
+    const R = { leave: ruleTop + 2, eg: ruleTop + 3, p3: ruleTop + 4 }; // value cells in column D
+    const RV = 'D';
+    const ref = r => '$' + RV + '$' + r;
+
+    const dL = colL(d0), dLast = colL(d0 + nD - 1);
+    const L = k => colL(SC[k]);
+    model.rows.forEach((r, i) => {
+      const rr = firstData + i;
+      const row = ws.getRow(rr); row.height = 18;
+      const band = i % 2 ? C.band : C.white;
+      const idv = [r.state, r.code, r.name, r.head, r.desig, r.company, r.doj ? fmtKey(r.doj) : '', r.dol ? fmtKey(r.dol) : '', r.status];
+      idv.forEach((v, j) => {
+        const c = row.getCell(j + 1); c.value = v;
+        c.font = { size: 10, color: { argb: C.ink }, bold: j === 2 };
+        c.fill = fill(band); c.border = box;
+        c.alignment = { vertical: 'middle', horizontal: j >= 5 ? 'center' : 'left', indent: j < 5 ? 0 : 0 };
+      });
+      if (!r.matched) { row.getCell(6).fill = fill('FFFFE4E6'); row.getCell(6).value = 'NOT IN MASTER'; row.getCell(6).font = { size: 8, bold: true, color: { argb: 'FFBE123C' } }; }
+      if (r.status === 'Inactive') { row.getCell(9).font = { size: 9, bold: true, color: { argb: 'FFB91C1C' } }; }
+      model.gridDates.forEach((k, j) => {
+        const v = r.cells[k];
+        const c = row.getCell(d0 + j); c.value = v || null;
+        const cs = codeStyle(v);
+        c.fill = fill(cs.bg); c.font = { size: 9, bold: true, color: { argb: cs.fg } };
+        c.alignment = { horizontal: 'center', vertical: 'middle' }; c.border = box;
+      });
+      const rng = dL + rr + ':' + dLast + rr;
+      const has = t => 'ISNUMBER(SEARCH("' + t + '",' + rng + '))';
+      const prio = (t, higher) => 'SUMPRODUCT(' + [has(t)].concat(higher.map(h => '(1-' + has(h) + ')')).join('*') + ')';
+      const typeF = {};
+      PRIORITY.forEach((t, i) => { typeF[t] = i === 0 ? 'SUMPRODUCT(--' + has(t) + ')' : prio(t, PRIORITY.slice(0, i)); });
+      const f = {
+        grand: ['COUNTA(' + rng + ')-COUNTIF(' + rng + ',"-")', r.grand],
+        WO: [typeF.WO, r.counts.WO], H: ['COUNTIF(' + rng + ',"H")', r.counts.H],
+        P: [prio('P', PRIORITY), r.counts.P],
+        P4: [typeF.P4, r.counts.P4], L: [typeF.L, r.counts.L],
+        HD: [typeF.HD, r.counts.HD], EG: [typeF.EG, r.counts.EG],
+        AB: [typeF.AB, r.counts.AB],
+        total: ['SUM(' + L('WO') + rr + ':' + L('AB') + rr + ')', r.total],
+        P3: ['COUNTIF(' + rng + ',"*P3*")', r.counts.P3], P5: ['COUNTIF(' + rng + ',"*P5*")', r.counts.P5],
+        hdDed: [L('HD') + rr + '*0.5', r.hdDed],
+        lDed: ['IF(' + ref(R.leave) + '="Yes",0,' + L('L') + rr + ')', r.lDed],
+        egDed: ['IF(' + ref(R.eg) + '=0,0,INT(' + L('EG') + rr + '/' + ref(R.eg) + '))', r.egDed],
+        p3Ded: ['IF(' + ref(R.p3) + '=0,0,INT(' + L('P3') + rr + '/' + ref(R.p3) + '))', r.p3Ded],
+        payable: [L('total') + rr + '-' + L('AB') + rr + '-' + L('hdDed') + rr + '-' + L('lDed') + rr + '-' + L('egDed') + rr + '-' + L('p3Ded') + rr, r.payable],
+        final: ['N(' + L('payable') + rr + ')+N(' + L('other') + rr + ')+N(' + L('mela') + rr + ')+N(' + L('prevAdj') + rr + ')+N(' + L('assumed') + rr + ')', r.final]
+      };
+      SUM.forEach(s => {
+        const c = row.getCell(SC[s.k]);
+        if (f[s.k]) c.value = { formula: f[s.k][0], result: f[s.k][1] };
+        else if (s.k === 'prevAdj') c.value = model.prevDates.length ? r.prevAdj : null;
+        else if (s.k === 'assumed') c.value = r.assumed;
+        else if (s.k === 'remarks') c.value = r.remarks || null;
+        else c.value = null;
+        c.border = box; c.alignment = { horizontal: s.k === 'remarks' ? 'left' : 'center', vertical: 'middle', wrapText: false };
+        c.font = { size: 10, color: { argb: C.ink } };
+        c.fill = fill(s.input ? C.input : band);
+        if (s.g === 'DEDUCTIONS') c.font = { size: 10, color: { argb: 'FFB91C1C' } };
+        if (s.g === 'FLAGS') c.font = { size: 10, color: { argb: 'FF6D28D9' } };
+        if (s.k === 'total' || s.k === 'payable') c.font = { size: 10, bold: true, color: { argb: C.ink } };
+        if (s.k === 'final') { c.font = { size: 11, bold: true, color: { argb: 'FF065F46' } }; c.fill = fill('FFD1FAE5'); }
+        if (s.k === 'remarks') c.font = { size: 9, italic: true, color: { argb: r.remarks ? 'FF9A3412' : C.mute } };
+        if (['hdDed', 'lDed', 'egDed', 'p3Ded', 'payable', 'final', 'prevAdj', 'other', 'mela', 'assumed'].includes(s.k)) c.numFmt = 'General;[Red]-General;0';
+      });
+      if (r.grand !== r.total) row.getCell(SC.total).fill = fill('FFFECACA');
+    });
+
+    // totals row
+    const tr = ws.getRow(totRow); tr.height = 22;
+    for (let c = 1; c <= lastCol; c++) {
+      const cell = tr.getCell(c); cell.fill = fill(C.navy); cell.border = box;
+      cell.font = { bold: true, size: 10, color: { argb: C.white } }; cell.alignment = { horizontal: 'center', vertical: 'middle' };
+    }
+    ws.mergeCells(totRow, 1, totRow, ID.length);
+    tr.getCell(1).value = 'TOTAL  (' + model.rows.length + ' employees)   •   Day row = present head-count';
+    tr.getCell(1).alignment = { horizontal: 'right', vertical: 'middle', indent: 1 };
+    if (model.rows.length) {
+      model.gridDates.forEach((k, j) => {
+        const cl = colL(d0 + j);
+        const cnt = model.rows.filter(r => /^P/.test(r.cells[k] || '')).length;
+        tr.getCell(d0 + j).value = { formula: 'COUNTIF(' + cl + firstData + ':' + cl + lastData + ',"P*")', result: cnt };
+        tr.getCell(d0 + j).font = { bold: true, size: 8, color: { argb: C.white } };
+      });
+      SUM.forEach(s => {
+        if (s.k === 'remarks') return;
+        const cl = colL(SC[s.k]);
+        const val = model.rows.reduce((a, r) => a + (+({ grand: r.grand, total: r.total, hdDed: r.hdDed, lDed: r.lDed, egDed: r.egDed, p3Ded: r.p3Ded, payable: r.payable, final: r.final, prevAdj: r.prevAdj, assumed: r.assumed }[s.k] ?? r.counts[s.k] ?? 0) || 0), 0);
+        tr.getCell(SC[s.k]).value = { formula: 'SUM(' + cl + firstData + ':' + cl + lastData + ')', result: val };
+        tr.getCell(SC[s.k]).numFmt = 'General;[Red]-General;0';
+      });
+      tr.getCell(SC.final).fill = fill('FF065F46');
+    }
+
+    // autofilter + print titles
+    ws.autoFilter = { from: { row: 4, column: 1 }, to: { row: Math.max(lastData, 4), column: lastCol } };
+    ws.pageSetup.printTitlesRow = '3:4';
+
+    /* ---- Rules + explanation block ---- */
+    let r = ruleTop;
+    const sec = (row, text, color) => {
+      ws.mergeCells(row, 2, row, 14);
+      const c = ws.getCell(row, 2); c.value = text;
+      c.font = { bold: true, size: 12, color: { argb: C.white } }; c.fill = fill(color || C.navy);
+      c.alignment = { vertical: 'middle', indent: 1 }; ws.getRow(row).height = 22;
+    };
+    sec(r, 'PAYROLL RULES  (change the yellow value — all formulas above recalculate)');
+    const hdr = ws.getRow(r + 1);
+    [['B', 'Rule'], ['D', 'Value'], ['E', 'What it means']].forEach(([col, v]) => {
+      const c = hdr.getCell(col); c.value = v; c.font = { bold: true, size: 10, color: { argb: C.navy } }; c.fill = fill('FFE2E8F0');
+    });
+    ws.mergeCells(r + 1, 2, r + 1, 3); ws.mergeCells(r + 1, 5, r + 1, 14);
+    const rules = [
+      [R.leave, 'Leave (L) is paid?', model.opts.leavePaid ? 'Yes' : 'No', 'Yes = leave day counts as payable. No = every L is deducted (Leave Deduction column).'],
+      [R.eg, 'Early Going: 1 day cut for every', model.opts.egN, '0 = no deduction. Example 3 = every 3 Early Going (EG) days cut 1 day (whole days only).'],
+      [R.p3, 'No Logout (P3): 1 day cut for every', model.opts.p3N, '0 = no deduction. Example 3 = every 3 No-Logout days cut 1 day (whole days only).']
+    ];
+    rules.forEach(([row, a, v, d]) => {
+      ws.mergeCells(row, 2, row, 3); ws.mergeCells(row, 5, row, 14);
+      const ca = ws.getCell(row, 2); ca.value = a; ca.font = { bold: true, size: 10 }; ca.border = box;
+      const cv = ws.getCell(row, 4); cv.value = v; cv.fill = fill('FFFDE68A'); cv.font = { bold: true, size: 11, color: { argb: 'FF78350F' } };
+      cv.alignment = { horizontal: 'center' }; cv.border = { top: { style: 'medium', color: { argb: 'FFD97706' } }, left: { style: 'medium', color: { argb: 'FFD97706' } }, bottom: { style: 'medium', color: { argb: 'FFD97706' } }, right: { style: 'medium', color: { argb: 'FFD97706' } } };
+      if (row === R.leave) cv.dataValidation = { type: 'list', allowBlank: false, formulae: ['"Yes,No"'] };
+      else cv.dataValidation = { type: 'whole', operator: 'between', allowBlank: false, formulae: [0, 31] };
+      const cd = ws.getCell(row, 5); cd.value = d; cd.font = { size: 10, color: { argb: C.mute } }; cd.alignment = { wrapText: true, vertical: 'middle' };
+      ws.getRow(row).height = 20;
+    });
+
+    // Legend
+    r = R.p3 + 2;
+    sec(r, 'CODE LEGEND', '334155');
+    const legend = [
+      ['P', 'Present', 'P'], ['AB', 'Absent', 'AB'], ['WO', 'Weekly Off', 'WO'], ['H', 'Holiday (from location holiday list)', 'H'],
+      ['L', 'Leave', 'L'], ['HD', 'Half Day', 'HD'], ['EG', 'Early Going', 'EG'], ['P3', 'Present, No Logout', 'P3'],
+      ['P5', 'Present, No First Call', 'P5'], ['P4', 'Worked on Week-Off day', 'P4'], ['Any combination', 'e.g. P3EG, EGP3, HDP3, P3HD, P5P3, P4P3, HDEG — the day is counted once by priority AB > HD > EG > L > P4 > WO > H > P. P3 and P5 inside any code are also counted as flags.', 'P5P3'],
+      ['-', 'After date of leaving — not counted', '-']
+    ];
+    legend.forEach((lg, i) => {
+      const row = r + 1 + i;
+      const cc = ws.getCell(row, 2); cc.value = lg[0];
+      const cs = codeStyle(lg[2]); cc.fill = fill(cs.bg); cc.font = { bold: true, size: 10, color: { argb: cs.fg } };
+      cc.alignment = { horizontal: 'center' }; cc.border = box;
+      ws.mergeCells(row, 3, row, 14);
+      const cd = ws.getCell(row, 3); cd.value = lg[1]; cd.font = { size: 10, color: { argb: C.ink } };
+    });
+
+    // Calculation explanation
+    r = r + legend.length + 2;
+    sec(r, 'HOW THE CALCULATION WORKS', C.grpPay);
+    const ex = [
+      ['1. Day codes', 'Each date cell is the code from the Breeze report for ' + fmtKey(model.gridDates[0]) + ' to ' + fmtKey(model.gridDates[nD - 1]) + '. On a holiday of the employee\'s location (holiday list from the Master file, state taken from Employee Master) the code is replaced with H. After the date of leaving the cell shows "-".'],
+      ['2. Day Count', 'Every day is counted once, also for combined codes, by priority: Absent (AB) > Half Day (HD) > Early Going (EG) > Leave (L) > WO Worked (P4) > WO > Holiday (H) > Present (any other code with P). Example: P3EG = Early Going, HDP3 = Half Day, P5P3 = Present. TOTAL = sum of these; Grand Total = filled days. If they differ the TOTAL cell turns red (unknown code).'],
+      ['3. Flags', 'No Logout (P3) and No First Call (P5) are counted wherever they appear, inside any combination (P3EG, HDP3, P5P3...). They do not change the day type; they only drive the Auto Logout Deduction rule.'],
+      ['4. Deductions', 'Half Day Deduction = Half Day × 0.5.   Leave Deduction = Leave Taken if rule "Leave is paid" = No, else 0.   Early Going Deduction = INT(Early Going ÷ rule value).   Auto Logout Deduction = INT(No Logout ÷ rule value).'],
+      ['5. Payable Days as per Breeze', '= TOTAL − Absent − Half Day Deduction − Leave Deduction − Early Going Deduction − Auto Logout Deduction.   (So: Present, WO, Holiday, WO Worked, Leave (if paid) and Early Going count 1 day; Half Day counts 0.5; Absent counts 0.)'],
+      ['6. Assumed days', model.cutoff < model.dim ? 'Attendance is taken till ' + pad(model.cutoff) + '/' + pad(model.month) + '. Days ' + asLbl + ' (' + (model.dim - model.cutoff) + ' days) are added as payable in advance. For an employee who left, only days up to the leaving date are added.' : 'Full month attendance is used, so no days are assumed.'],
+      ['7. Previous month status', model.prevDates.length ? 'Previous month days ' + prevLbl + ' were paid in advance last month. Their actual status from Breeze is checked now: Absent = −1, Half Day = −0.5' + (model.opts.leavePaid ? '' : ', Leave = −1') + ', others = 0. That total is in this column.' : 'Enter the adjustment for the previous month\'s advance days here (no previous month data was uploaded). Absent = −1, Half Day = −0.5.'],
+      ['8. Final Payable Days', '= Payable Days as per Breeze + Other Adjustment + MELA-EDF + Previous Month Status + Assumed days.   Yellow columns are for manual entry.']
+    ];
+    ex.forEach((e, i) => {
+      const row = r + 1 + i;
+      ws.mergeCells(row, 2, row, 4); ws.mergeCells(row, 5, row, 30);
+      const a = ws.getCell(row, 2); a.value = e[0]; a.font = { bold: true, size: 10, color: { argb: C.navy } };
+      a.alignment = { vertical: 'top', wrapText: true }; a.fill = fill('FFF1F5F9'); a.border = box;
+      const b = ws.getCell(row, 5); b.value = e[1]; b.font = { size: 10, color: { argb: C.ink } };
+      b.alignment = { vertical: 'top', wrapText: true }; b.border = box;
+      ws.getRow(row).height = 34;
+    });
+    // worked example (first employee)
+    if (model.rows.length) {
+      const x = model.rows.find(z => z.counts.HD || z.counts.AB) || model.rows[0];
+      const row = r + ex.length + 2;
+      ws.mergeCells(row, 2, row, 4); ws.mergeCells(row, 5, row, 30);
+      const a = ws.getCell(row, 2); a.value = 'Example: ' + x.name; a.font = { bold: true, size: 10, color: { argb: 'FF065F46' } };
+      a.fill = fill('FFD1FAE5'); a.alignment = { vertical: 'top', wrapText: true };
+      const b = ws.getCell(row, 5);
+      const n = v => (Math.round(v * 100) / 100).toString();
+      b.value = 'TOTAL ' + x.total + ' − Absent ' + x.counts.AB + ' − Half Day Ded. ' + n(x.hdDed) + ' − Leave Ded. ' + n(x.lDed) + ' − EG Ded. ' + x.egDed + ' − Auto Logout Ded. ' + x.p3Ded +
+        ' = Payable ' + n(x.payable) + ';   + Previous month ' + n(x.prevAdj) + ' + Assumed ' + x.assumed + ' = Final ' + n(x.final) + ' days.';
+      b.font = { size: 10, bold: true, color: { argb: 'FF065F46' } }; b.fill = fill('FFECFDF5'); b.alignment = { vertical: 'top', wrapText: true };
+      ws.getRow(row).height = 24;
+    }
+
+    /* ---- Holidays sheet ---- */
+    const hs = wb.addWorksheet('Holidays Applied', { views: [{ showGridLines: false }] });
+    hs.columns = [{ width: 26 }, { width: 22 }, { width: 14 }, { width: 12 }, { width: 40 }];
+    hs.mergeCells('A1:E1'); hs.getCell('A1').value = 'HOLIDAYS APPLIED — ' + mName.toUpperCase() + ' ' + model.year;
+    hs.getCell('A1').font = { bold: true, size: 14, color: { argb: C.white } }; hs.getCell('A1').fill = fill(C.navy); hs.getRow(1).height = 26;
+    hs.getCell('A1').alignment = { vertical: 'middle', indent: 1 };
+    const hh = hs.getRow(3); ['State / Location', 'Holiday List Used', 'Date', 'Day', 'Holiday'].forEach((v, i) => {
+      const c = hh.getCell(i + 1); c.value = v; c.font = { bold: true, color: { argb: C.white } }; c.fill = fill(C.navy2); c.border = box;
+    });
+    let hr = 4;
+    const map = model.opts.holidayMap;
+    const byId = {}; holidayLists.forEach(l => { byId[l.id] = l; });
+    const range = new Set(model.gridDates.concat(model.allPrevDates));
+    Object.keys(map).sort().forEach(stName => {
+      const l = byId[map[stName]];
+      const items = l ? l.items.filter(it => range.has(it.key)) : [];
+      if (!items.length) {
+        const row = hs.getRow(hr++); [stName, l ? l.label : 'No list selected', '', '', l ? 'No holiday in this period' : 'No holiday applied'].forEach((v, i) => { row.getCell(i + 1).value = v; row.getCell(i + 1).border = box; });
+        if (!l) row.getCell(2).font = { color: { argb: 'FFB91C1C' }, bold: true };
+      }
+      items.forEach(it => {
+        const row = hs.getRow(hr++);
+        [stName, l.label, fmtKey(it.key), DAYS[dowOf(it.key)], it.name].forEach((v, i) => { const c = row.getCell(i + 1); c.value = v; c.border = box; });
+        row.getCell(3).fill = fill(CODE_STYLE.H.bg);
+      });
+    });
+
+    return wb;
+  }
+
+  const api = { toBook, parseBreeze, parseMaster, splitName, matchEmployees, nameScore, guessHolidayList, detectMonths, buildModel,
+    exportWorkbook, classify, codeStyle, fmtKey, shortKey, isTestId, MONTHS, DAYS, dowOf, daysInMonth, CODE_STYLE };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.AttCore = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+(function(){
+const A = window.AttCore;
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const S = { breeze:null, master:null, prev:null, matches:{}, matchInfo:{}, holMap:{}, model:null, filter:'all' };
+let downloads = null;
+try { if (window.claude && window.claude.use) window.claude.use('downloads').then(d => { downloads = d; }).catch(()=>{}); } catch(e) {}
+
+function toast(m){ const t=$('#toast'); t.textContent=m; t.classList.remove('hidden'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.add('hidden'),3200); }
+
+/* ---- uploads ---- */
+document.querySelectorAll('.drop').forEach(dz => {
+  const inp = dz.querySelector('input');
+  inp.addEventListener('change', () => inp.files[0] && load(inp.dataset.k, inp.files[0], dz));
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('over'); });
+  dz.addEventListener('dragleave', () => dz.classList.remove('over'));
+  dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('over'); const f=e.dataTransfer.files[0]; if (f) load(inp.dataset.k, f, dz); });
+});
+async function load(kind, file, dz){
+  dz.classList.remove('ok','err'); const st = dz.querySelector('.st'); st.textContent = 'Reading…';
+  try {
+    if (typeof XLSX === 'undefined') throw new Error('Excel reader could not load. Check internet connection and reload.');
+    const book = A.toBook(XLSX, new Uint8Array(await file.arrayBuffer()));
+    if (kind === 'master') {
+      const m = A.parseMaster(book);
+      S.master = m;
+      st.textContent = '✓ ' + file.name + ' — ' + m.master.list.length + ' employees, ' + m.holidayLists.length + ' holiday lists';
+    } else {
+      const b = A.parseBreeze(book);
+      b.emps.forEach(e => { e.name = A.splitName(e.rawName).name; });
+      S[kind] = b;
+      st.textContent = '✓ ' + file.name + ' — ' + b.emps.length + ' employees, ' + A.fmtKey(b.dates[0]) + ' to ' + A.fmtKey(b.dates[b.dates.length-1]);
+    }
+    dz.classList.add('ok');
+    if (kind !== 'prev') { S.matches = {}; S.matchInfo = {}; }
+    init(kind);
+  } catch (e) { dz.classList.add('err'); st.textContent = '✗ ' + e.message; }
 }
 
-/* ---- Email summary text ---- */
-document.getElementById('btnEmailText').addEventListener('click', ()=>{
-  const lines=[];
-  lines.push(`Attendance verification summary — ${state.flags.length} record(s) need checking`);
-  lines.push('');
-  state.flags.forEach(f=>{
-    lines.push(`• ${f.name} (${f.empCode}) — ${f.designation}, ${f.branch} — ${f.date}`);
-    lines.push(`   ${f.reason}`);
+/* ---- init after both files ---- */
+function init(kind){
+  if (!S.breeze || !S.master) return;
+  $('#work').classList.remove('hidden');
+  if (kind !== 'prev' || !Object.keys(S.matches).length) {
+    const mt = A.matchEmployees(S.breeze.emps, S.master.master.list);
+    S.breeze.emps.forEach(e => { S.matches[e.code] = mt[e.code] ? mt[e.code].idx : -1; S.matchInfo[e.code] = mt[e.code] || {}; });
+    const months = A.detectMonths(S.breeze.dates);
+    const best = months.slice().sort((a,b)=>b.count-a.count)[0];
+    $('#sMonth').innerHTML = months.map(m => '<option value="'+m.ym+'"'+(m===best?' selected':'')+'>'+m.label+' ('+m.count+' days in report)</option>').join('');
+    fillCut();
+  }
+  run();
+}
+function fillCut(){
+  const ym = $('#sMonth').value, y=+ym.slice(0,4), m=+ym.slice(5);
+  const dim = A.daysInMonth(y,m);
+  const have = S.breeze.dates.filter(k=>k.slice(0,7)===ym).map(k=>+k.slice(8));
+  const maxHave = Math.max(...have);
+  let def = dim > 25 ? 25 : dim;
+  if (maxHave < def) def = maxHave;
+  let h = '';
+  for (let d = 15; d < dim; d++) h += '<option value="'+d+'"'+(d===def?' selected':'')+'>Till '+String(d).padStart(2,'0')+' — assume '+String(d+1).padStart(2,'0')+' to '+dim+' as payable</option>';
+  h += '<option value="'+dim+'"'+(def===dim?' selected':'')+'>Full month (no assumed days)</option>';
+  $('#sCut').innerHTML = h;
+}
+['#sMonth'].forEach(s => $(s).addEventListener('change', () => { fillCut(); run(); }));
+['#sCut','#sLeave','#sEG','#sP3','#sHide','#sUnm'].forEach(s => $(s).addEventListener('change', run));
+$('#q').addEventListener('input', renderPreview);
+$('#flt').addEventListener('click', e => { const b=e.target.closest('button'); if(!b) return; S.filter=b.dataset.f; document.querySelectorAll('#flt button').forEach(x=>x.classList.toggle('on',x===b)); renderPreview(); });
+
+function opts(){
+  const ym = $('#sMonth').value;
+  return { year:+ym.slice(0,4), month:+ym.slice(5), cutoff:+$('#sCut').value, leavePaid:$('#sLeave').value==='1',
+    egN:+$('#sEG').value, p3N:+$('#sP3').value, hideTest:$('#sHide').checked, includeUnmatched:$('#sUnm').checked,
+    prevBreeze:S.prev, holidayMap:S.holMap, matches:S.matches, matchInfo:S.matchInfo };
+}
+
+function locations(){
+  const out = {};
+  const list = S.master.master.list;
+  S.breeze.emps.forEach(e => {
+    if ($('#sHide').checked && A.isTestId(e)) return;
+    const m = S.matches[e.code] >= 0 ? list[S.matches[e.code]] : null;
+    if (!m && !$('#sUnm').checked) return;
+    const loc = m && m.state ? m.state : e.state;
+    out[loc] = (out[loc]||0) + 1;
   });
-  if(!state.flags.length) lines.push('No flags — everything reconciled cleanly.');
-  const text=lines.join('\n');
-  document.getElementById('emailBox').value=text;
-  document.getElementById('emailBoxWrap').classList.remove('hidden');
-  navigator.clipboard?.writeText(text).then(()=>toast('Flag summary copied — paste into your email')).catch(()=>toast('Summary ready below — copy manually'));
+  return out;
+}
+
+function run(){
+  const locs = locations();
+  const lists = S.master.holidayLists;
+  Object.keys(locs).forEach(l => { if (S.holMap[l] === undefined) S.holMap[l] = A.guessHolidayList(l, lists); });
+  Object.keys(S.holMap).forEach(l => { if (!locs[l]) delete S.holMap[l]; });
+  S.model = A.buildModel(S.breeze, S.master, opts());
+  renderHol(locs); renderMatch(); renderPreview(); renderNotes();
+}
+
+/* ---- holiday mapping ---- */
+function renderHol(locs){
+  const lists = S.master.holidayLists, md = S.model;
+  const range = new Set(md.gridDates.concat(md.allPrevDates));
+  let warn = 0;
+  $('#holBody').innerHTML = Object.keys(locs).sort().map(l => {
+    const id = S.holMap[l]; const L = lists.find(x=>x.id===id);
+    if (!L) warn++;
+    const items = L ? L.items.filter(i=>range.has(i.key)) : [];
+    return '<tr><td><b>'+esc(l)+'</b></td><td class="num">'+locs[l]+'</td><td><select data-loc="'+esc(l)+'">'+
+      '<option value="">— No holiday list —</option>'+lists.map(x=>'<option value="'+esc(x.id)+'"'+(x.id===id?' selected':'')+'>'+esc(x.label)+'</option>').join('')+
+      '</select></td><td><div class="chips">'+(L ? (items.length ? items.map(i=>'<span class="chip" title="'+esc(i.name)+'">'+A.fmtKey(i.key).slice(0,5)+'</span>').join('') : '<span class="hint">None in period</span>') : '<span class="badge b-red">Not set</span>')+'</div></td></tr>';
+  }).join('');
+  $('#holWarn').innerHTML = warn ? '<div class="notice n-warn"><b>'+warn+' location(s) have no holiday list.</b> Holidays will not be marked for them. Pick the list that applies (e.g. Assam has no sheet in the master file).</div>' : '';
+  $('#holBody').querySelectorAll('select').forEach(s => s.addEventListener('change', () => { S.holMap[s.dataset.loc] = s.value; run(); }));
+}
+
+/* ---- name review ---- */
+function renderMatch(){
+  const list = S.master.master.list;
+  const sorted = list.slice().sort((a,b)=>a.name.localeCompare(b.name));
+  const hide = $('#sHide').checked;
+  const rows = S.breeze.emps.filter(e => !(hide && A.isTestId(e)) && !/Exact|Emp Code/.test(S.matchInfo[e.code].how||'') );
+  const usedBy = {}; Object.entries(S.matches).forEach(([c,i]) => { if (i>=0) usedBy[i]=c; });
+  rows.sort((a,b)=> (S.matches[a.code]>=0) - (S.matches[b.code]>=0));
+  $('#mBody').innerHTML = rows.length ? rows.map(e => {
+    const cur = S.matches[e.code];
+    const info = S.matchInfo[e.code] || {};
+    const ns = A.splitName(e.rawName);
+    const top = (e._cands||[]).filter(c=>c.s>=0.6);
+    let badge;
+    if (info.manual) badge = '<span class="badge b-blu">Set by you</span>';
+    else if (cur>=0) badge = '<span class="badge b-grn">'+esc(info.how)+' '+Math.round(info.score*100)+'%</span>';
+    else if (top[0] && top[0].s>=0.85) badge = '<span class="badge b-amb">Suggested: '+esc(list[top[0].idx].name)+' '+Math.round(top[0].s*100)+'%</span>';
+    else badge = '<span class="badge b-red">Not in master</span>';
+    const opt = (m,lbl) => '<option value="'+m.idx+'"'+(m.idx===cur?' selected':'')+'>'+esc(lbl||m.name)+' — '+esc(m.company)+', '+esc(m.state)+(usedBy[m.idx]&&usedBy[m.idx]!==e.code?'  (used by '+usedBy[m.idx]+')':'')+'</option>';
+    return '<tr><td><b>'+esc(ns.name)+'</b><div class="hint mono">'+esc(e.code)+' · '+esc(e.state)+(ns.dol?' · left '+A.fmtKey(ns.dol):'')+'</div><div style="margin-top:4px">'+badge+'</div></td><td><select data-code="'+esc(e.code)+'">'+
+      '<option value="-1"'+(cur<0?' selected':'')+'>— Not in master —</option>'+
+      (top.length?'<optgroup label="Closest names">'+top.map(c=>opt(list[c.idx], list[c.idx].name+' ('+Math.round(c.s*100)+'%)')).join('')+'</optgroup>':'')+
+      '<optgroup label="All employees">'+sorted.map(m=>opt(m)).join('')+'</optgroup></select></td></tr>';
+  }).join('') : '<tr><td colspan="2" class="hint">All names matched exactly.</td></tr>';
+  $('#mBody').querySelectorAll('select').forEach(s => s.addEventListener('change', () => {
+    const c = s.dataset.code; S.matches[c] = +s.value; S.matchInfo[c] = { idx:+s.value, score:1, how:'Manual', manual:true }; run();
+  }));
+}
+
+/* ---- preview ---- */
+const STY = A.CODE_STYLE;
+const hex = a => '#'+a.slice(2);
+function chip(c){ const s=A.codeStyle(c||''); return '<i style="background:'+hex(s.bg)+';color:'+hex(s.fg)+'" title="'+esc(c||'blank')+'">'+esc((c||'').replace('P5P3','P5+').slice(0,3))+'</i>'; }
+const n = v => (Math.round(v*100)/100).toLocaleString('en-IN');
+function needs(r){ return !r.matched || /Unknown|blank|check/.test(r.remarks) || r.grand !== r.total; }
+function renderPreview(){
+  const md = S.model; if (!md) return;
+  const q = $('#q').value.trim().toLowerCase();
+  let rows = md.rows.filter(r => !q || (r.name+' '+r.code+' '+r.head+' '+r.state).toLowerCase().includes(q));
+  if (S.filter==='att') rows = rows.filter(needs);
+  if (S.filter==='inact') rows = rows.filter(r=>r.status==='Inactive');
+  if (S.filter==='nm') rows = rows.filter(r=>!r.matched);
+  $('#cnt').textContent = rows.length + ' of ' + md.rows.length + ' employees';
+  $('#pBody').innerHTML = rows.map(r =>
+    '<tr><td><b>'+esc(r.name)+'</b><div class="hint mono">'+esc(r.code)+' · '+esc(r.desig)+(r.status==='Inactive'?' · <span style="color:#b91c1c;font-weight:700">Inactive</span>':'')+'</div></td>'+
+    '<td>'+esc(r.location)+'<div class="hint">'+(r.matched?esc(r.company):'<span class="badge b-red">Not in master</span>')+'</div></td>'+
+    '<td><div class="strip">'+md.gridDates.map(k=>chip(r.cells[k])).join('')+'</div></td>'+
+    '<td class="num" style="color:#b91c1c">'+r.counts.AB+'</td><td class="num">'+n(r.payable)+'</td><td class="num">'+(md.prevDates.length?n(r.prevAdj):'<span class="hint">—</span>')+'</td><td class="num">'+r.assumed+'</td>'+
+    '<td class="num" style="color:#047857;font-size:14px">'+n(r.final)+'</td><td class="hint" style="max-width:240px">'+esc(r.remarks)+'</td></tr>').join('') ||
+    '<tr><td colspan="9" class="hint" style="padding:20px">No employees match this filter.</td></tr>';
+}
+function renderNotes(){
+  const md = S.model, rows = md.rows;
+  const mName = A.MONTHS[md.month-1];
+  $('#prevSub').textContent = mName+' '+md.year+' · attendance '+A.fmtKey(md.gridDates[0])+' to '+A.fmtKey(md.gridDates[md.gridDates.length-1])+(md.cutoff<md.dim?' · '+(md.dim-md.cutoff)+' days assumed':'');
+  const notes = [];
+  if (md.missingDates.length) notes.push(['err','<b>'+md.missingDates.length+' date(s) are not in the Breeze report</b> ('+md.missingDates.map(A.fmtKey).slice(0,6).join(', ')+(md.missingDates.length>6?'…':'')+'). These cells will be blank. Download the report for the full range or lower the cut-off.']);
+  if (md.ignoredAfterCutoff.length) notes.push(['info','The report also has '+A.fmtKey(md.ignoredAfterCutoff[0])+' to '+A.fmtKey(md.ignoredAfterCutoff[md.ignoredAfterCutoff.length-1])+'. As per cut-off these days are paid as "Assumed" and will be checked next month. Choose "Full month" to use the actual codes instead.']);
+  if (md.prevDates.length) notes.push(['info','Previous month status calculated from Breeze for '+md.prevDates.map(k=>A.fmtKey(k).slice(0,5)).join(', ')+'.']);
+  else if (md.allPrevDates.length) notes.push(['info','Previous month advance days ('+A.shortKey(md.allPrevDates[0])+' to '+A.shortKey(md.allPrevDates[md.allPrevDates.length-1])+') are not in the uploaded report — upload the previous month report to fill that column automatically, or enter it in Excel.']);
+  $('#notes').innerHTML = notes.map(([t,h])=>'<div class="notice n-'+t+'">'+h+'</div>').join('');
+  const hol = rows.reduce((a,r)=>a+r.holApplied,0);
+  const att = rows.filter(needs).length;
+  const fin = rows.reduce((a,r)=>a+r.final,0);
+  $('#kpis').innerHTML =
+    '<div class="kpi"><div class="l">Employees</div><div class="v">'+rows.length+'</div></div>'+
+    '<div class="kpi"><div class="l">Holiday marks added</div><div class="v">'+hol+'</div></div>'+
+    '<div class="kpi '+(att?'warn':'good')+'"><div class="l">Needs attention</div><div class="v">'+att+'</div></div>'+
+    '<div class="kpi"><div class="l">Inactive / left</div><div class="v">'+rows.filter(r=>r.status==='Inactive').length+'</div></div>'+
+    '<div class="kpi good"><div class="l">Total final payable days</div><div class="v">'+n(fin)+'</div></div>';
+  const lg = [['P','Present'],['AB','Absent'],['WO','Weekly Off'],['H','Holiday'],['L','Leave'],['HD','Half Day'],['EG','Early Going'],['P3','Present with flag (P3 / P5)'],['P4','Worked on WO'],['-','After leaving']];
+  $('#legend').innerHTML = lg.map(([c,t])=>{const s=A.codeStyle(c);return '<span><i style="background:'+hex(s.bg)+';color:'+hex(s.fg)+'">'+c+'</i>'+t+'</span>';}).join('');
+}
+
+/* ---- export ---- */
+$('#exportBtn').addEventListener('click', async () => {
+  const btn = $('#exportBtn'); btn.disabled = true;
+  try {
+    if (typeof ExcelJS === 'undefined') throw new Error('Excel writer could not load. Check internet connection and reload.');
+    const md = S.model;
+    const wb = await A.exportWorkbook(ExcelJS, md, S.master.holidayLists);
+    const buf = await wb.xlsx.writeBuffer();
+    const name = 'Payroll_Attendance_Register_' + A.MONTHS[md.month-1] + '_' + md.year + '.xlsx';
+    const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    if (downloads) {
+      try { await downloads.save({ filename: name, data: blob }); toast('Excel saved: ' + name); }
+      catch (e) { if (e && e.code === 'declined') toast('Download cancelled.'); else throw new Error(e && e.message || 'Download not available here.'); }
+    } else {
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click();
+      setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 1500); toast('Excel ready: ' + name);
+    }
+  } catch (e) { toast('Export failed: ' + e.message); }
+  btn.disabled = false;
 });
+})();
 </script>
 </body>
 </html>
