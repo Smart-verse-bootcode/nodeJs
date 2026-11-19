@@ -233,6 +233,20 @@ footer{text-align:center;color:#94a3b8;font-size:12px;padding:10px 0 30px}
   }
 
   // book = [{name, rows:[[...]]}] (from SheetJS sheet_to_json header:1). r is 1-based.
+  // Find the Breeze employee for a person in Week Off Master / Manual User.
+  // Phone (unique) -> Employee Master row -> its Emp Code / its matched Breeze employee; else the person's own Emp Code. Never by name.
+  function resolveBreezeCode(person, breeze, matches) {
+    const codes = {}; breeze.emps.forEach(e => { codes[e.code.toUpperCase().replace(/\s+/g, '')] = e.code; });
+    if (person.masterIdx !== undefined) {
+      const mc = String(person.linked && person.linked.code || '').toUpperCase().replace(/\s+/g, '');
+      if (mc && codes[mc]) return { code: codes[mc], how: 'Phone' };
+      if (matches) { const hit = Object.keys(matches).find(k => matches[k] === person.masterIdx); if (hit) return { code: hit, how: 'Phone' }; }
+    }
+    const c = String(person.code || '').toUpperCase().replace(/\s+/g, '');
+    if (c && codes[c]) return { code: codes[c], how: 'Emp Code' };
+    return null;
+  }
+  function normPhone(p) { const d = String(p || '').replace(/\D/g, ''); return d.length >= 10 ? d.slice(-10) : ''; }
   // ['2026-10-16','2026-10-17','2026-10-19'] -> "16-10 to 17-10, 19-10"
   function rangeText(keys) {
     const ks = keys.slice().sort(); const out = []; let a = ks[0], b = ks[0];
@@ -325,9 +339,10 @@ footer{text-align:center;color:#94a3b8;font-size:12px;padding:10px 0 30px}
 
   /* ---------- Employee master + holiday lists ---------- */
   function parseMaster(wb) {
-    let master = null; const holidayLists = []; let manualUsers = null; let weekOffs = null;
+    let master = null; const holidayLists = []; let manualUsers = null; let weekOffs = null; let manualHeaders = [], manualSheet = '';
     for (const ws of wb) {
-      if (/manual\s*user/i.test(ws.name)) { manualUsers = parseManualUsers(ws); continue; }
+      if (/read\s*me|instruction/i.test(ws.name)) continue;
+      if (/manual/i.test(ws.name)) { const mu = parseManualUsers(ws); manualUsers = (manualUsers || []).concat(mu); manualHeaders = mu.headers; manualSheet = ws.name; continue; }
       if (/week\s*-?\s*off/i.test(ws.name)) { weekOffs = parseWeekOff(ws); continue; }
       if (/read\s*me|instruction/i.test(ws.name)) continue;
       // find header row in first 6 rows
@@ -372,31 +387,61 @@ footer{text-align:center;color:#94a3b8;font-size:12px;padding:10px 0 30px}
       }
     }
     if (!master) throw new Error('Employee Master sheet not found (need columns "Name" and "Company").');
-    return { master, holidayLists, manualUsers: manualUsers || [], hasManualSheet: !!manualUsers, weekOffs: weekOffs || [], hasWeekOffSheet: !!weekOffs };
+    // ---- phone number is unique: use it to link the master sheets together ----
+    const byPhone = {}; const dupPhones = [];
+    master.list.forEach(m => {
+      const p = normPhone(m.phone); if (!p) return;
+      if (byPhone[p]) dupPhones.push({ phone: p, a: byPhone[p], b: m }); else byPhone[p] = m;
+    });
+    (manualUsers || []).forEach(u => {
+      const m = byPhone[normPhone(u.phone)];
+      if (!m) return;
+      u.linked = { name: m.name, code: m.code }; u.masterIdx = m.idx;
+      if (u.code && m.code && u.code !== m.code) u.codeConflict = m.code;
+      if (m.code) { if (!u.code) u.codeFromPhone = true; u.code = m.code; }
+      if (normName(u.name) !== normName(m.name)) u.sheetName = u.name;
+      u.name = m.name;
+      if (m.company) u.company = m.company;
+      if (m.state) u.state = m.state;
+    });
+    (weekOffs || []).forEach(w => {
+      const m = byPhone[normPhone(w.phone)];
+      if (!m) return;
+      w.linked = { name: m.name, code: m.code }; w.masterIdx = m.idx;
+      if (normName(w.name) !== normName(m.name)) w.sheetName = w.name;
+      w.name = m.name;
+      if (m.code) w.code = m.code;
+    });
+    return { dupPhones, master, holidayLists, manualUsers: manualUsers || [], hasManualSheet: !!manualUsers, manualSheet, manualHeaders, sheetNames: wb.map(x => x.name), weekOffs: weekOffs || [], hasWeekOffSheet: !!weekOffs };
   }
 
   // "Manual User" sheet: Name, Employee Code, Company, Phone (+ optional State, Designation, Reporting Head)
   function parseManualUsers(ws) {
     let hdrRow = 0, h = [];
-    for (let r = 1; r <= Math.min(ws.rowCount, 6) && !hdrRow; r++) {
+    const isNameHdr = x => /name/.test(x) && !/company|head|reporting|manager|father|sheet/.test(x);
+    for (let r = 1; r <= Math.min(ws.rowCount, 10) && !hdrRow; r++) {
       const vals = rowVals(ws, r).map(v => clean(txt(v)).toLowerCase());
-      if (vals.some(x => x === 'name' || x.includes('employee name') || x === 'emp name')) { hdrRow = r; h = vals; }
+      if (vals.some(isNameHdr) && vals.filter(Boolean).length >= 2) { hdrRow = r; h = vals; }
     }
-    if (!hdrRow) return [];
+    const res = [];
+    res.headers = h.filter(Boolean);
+    if (!hdrRow) return res;
     const f = re => h.findIndex(x => re.test(x));
-    const c = { name: f(/^(employee\s*|emp\s*)?name$/), code: f(/(emp(loyee)?\s*(code|id))|^code$/), company: f(/company/),
-      phone: f(/phone|mobile|contact/), state: f(/^state$|location/), desig: f(/designation/), head: f(/reporting|head|manager/) };
-    const out = [];
+    let nameIdx = f(/^(employee\s*|emp\.?\s*|staff\s*)?name$/);
+    if (nameIdx < 0) nameIdx = h.findIndex(isNameHdr);
+    const c = { name: nameIdx, code: f(/(emp(loyee)?\.?\s*(code|id|no))|^code$|^id$/), company: f(/company/),
+      phone: f(/phone|mobile|contact/), state: f(/^state|location|region/), desig: f(/designation/), head: f(/reporting|head|manager/) };
     for (let r = hdrRow + 1; r <= ws.rowCount; r++) {
       const v = rowVals(ws, r);
       const g = i => i >= 0 ? clean(txt(v[i])) : '';
       const name = g(c.name);
-      if (!name) continue;
-      const code = g(c.code).toUpperCase();
-      out.push({ key: code || ('NAME:' + name.toUpperCase()), name, code, company: g(c.company), phone: g(c.phone),
+      if (!name || /^\d+$/.test(name)) continue;
+      const code = g(c.code).toUpperCase().replace(/\s+/g, '');
+      const ph = normPhone(g(c.phone));
+      res.push({ key: code || (ph ? 'PH:' + ph : 'NAME:' + name.toUpperCase()), name, code, company: g(c.company), phone: g(c.phone),
         state: g(c.state), desig: g(c.desig), head: g(c.head) });
     }
-    return out;
+    return res;
   }
 
   // "Week Off Master" sheet: Name, Designation, Weekly Off Schedule, Mobile Number, Code
@@ -509,12 +554,18 @@ footer{text-align:center;color:#94a3b8;font-size:12px;padding:10px 0 30px}
   }
   function matchEmployees(emps, masterList) {
     const res = {}; const used = {};
+    const cntM = {}, cntB = {};
+    masterList.forEach(m => { const k = phon(normName(m.name)); cntM[k] = (cntM[k] || 0) + 1; });
+    emps.forEach(e => { const k = phon(normName(e.name)); cntB[k] = (cntB[k] || 0) + 1; });
     const byCode = {};
     masterList.forEach(m => { if (m.code) byCode[m.code] = m; });
     const cands = [];
     emps.forEach(e => {
       if (byCode[e.code.toUpperCase()]) { res[e.code] = { idx: byCode[e.code.toUpperCase()].idx, score: 1, how: 'Emp Code' }; used[byCode[e.code.toUpperCase()].idx] = e.code; return; }
-      const scored = masterList.map(m => ({ m, ...nameScore(e.name, m.name) })).sort((x, y) => y.s - x.s);
+      const scored = masterList.filter(m => !m.code || !emps.some(x => x.code.toUpperCase() === m.code))
+        .map(m => ({ m, ...nameScore(e.name, m.name) })).sort((x, y) => y.s - x.s);
+      const dupName = cntB[phon(normName(e.name))] > 1 || (scored[0] && cntM[phon(normName(scored[0].m.name))] > 1);
+      if (dupName) { e._dupName = true; e._cands = scored.slice(0, 6).map(x => ({ idx: x.m.idx, s: x.s, how: x.how })); return; }
       e._cands = scored.slice(0, 6).map(x => ({ idx: x.m.idx, s: x.s, how: x.how }));
       const best = scored[0];
       if (best && (best.s >= 0.92 || (best.s >= 0.86 && best.how !== 'Similar'))) cands.push({ code: e.code, idx: best.m.idx, s: best.s, how: best.how });
@@ -571,16 +622,14 @@ footer{text-align:center;color:#94a3b8;font-size:12px;padding:10px 0 30px}
 
     const rows = [];
     const woList = masterData.weekOffs || [];
-    const woFor = (code, name) => {
-      const c = String(code || '').toUpperCase().replace(/\s+/g, '');
-      let w = c ? woList.find(x => x.code && x.code === c) : null;
-      if (!w && name) { const best = woList.map(x => ({ x, s: x.name ? nameScore(name, x.name).s : 0 })).sort((a, b) => b.s - a.s)[0]; if (best && best.s >= 0.92 && !best.x.code) w = best.x; }
-      return w || null;
-    };
+    const woByCode = {};
+    woList.forEach(w => { const r = resolveBreezeCode(w, breeze, opts.matches); w.breezeCode = r ? r.code : ''; w.linkHow = r ? r.how : ''; if (r && !woByCode[r.code]) woByCode[r.code] = w; });
+    const woFor = code => woByCode[code] || null;
     const manualEntries = (opts.manualEntries || []);
-    const manualCodes = new Set(manualEntries.filter(m => m.mode !== 'mix').map(m => (m.user.code || '').toUpperCase()).filter(Boolean));
+    manualEntries.forEach(me => { const r = resolveBreezeCode(me.user, breeze, opts.matches); me.breezeCode = r ? r.code : ''; });
+    const manualCodes = new Set(manualEntries.filter(m => m.mode !== 'mix' && m.breezeCode).map(m => m.breezeCode.toUpperCase()));
     const mixBy = {};
-    manualEntries.filter(m => m.mode === 'mix' && m.user.code).forEach(m => { mixBy[m.user.code.toUpperCase()] = m; });
+    manualEntries.filter(m => m.mode === 'mix' && m.breezeCode).forEach(m => { mixBy[m.breezeCode.toUpperCase()] = m; });
     breeze.emps.forEach(e => {
       if (opts.hideTest && isTestId(e)) return;
       if (manualCodes.has(e.code.toUpperCase())) return;
@@ -590,7 +639,7 @@ footer{text-align:center;color:#94a3b8;font-size:12px;padding:10px 0 30px}
       if (!m && !opts.includeUnmatched) return;
       const locState = canonState(m && m.state ? m.state : e.state);
       const hol = holidaysFor(locState);
-      const wo = woFor(e.code, ns.name);
+      const wo = woFor(e.code);
       const woDays = wo ? wo.days : [];
       let woApplied = 0;
       const mix = mixBy[e.code.toUpperCase()];
@@ -669,7 +718,7 @@ footer{text-align:center;color:#94a3b8;font-size:12px;padding:10px 0 30px}
         state: e.state, code: e.code, name: ns.name, head: e.head.replace(/\s+/g, ' ').trim(), desig: e.desig,
         company: m ? m.company : '', doj, dol, status: inactive ? 'Inactive' : (e.status || 'Active'),
         location: locState, cells, counts, total, grand, hdDed, lDed, egDed, p3Ded, payable, assumed, prevAdj, prevSeen, final,
-        remarks: remarks.join('; '), holApplied, woApplied, baseCells, manualDays, manual: mix ? (mix.source || 'register') : undefined, weekOff: wo ? (woDays.length ? woDays.map(d => DAYS[d]).join(' & ') : wo.text) : '', matched: !!m
+        remarks: remarks.join('; '), holApplied, woApplied, baseCells, manualDays, manual: mix ? (mix.source || 'register') : undefined, mkey: mix ? mix.user.key : undefined, weekOff: wo ? (woDays.length ? woDays.map(d => DAYS[d]).join(' & ') : wo.text) : '', matched: !!m
       });
     });
     // ---- manually entered employees ----
@@ -697,16 +746,16 @@ footer{text-align:center;color:#94a3b8;font-size:12px;padding:10px 0 30px}
       const assumed = dim - cutoff;
       const remarks = [me.source === 'biometric' ? 'Based on Biometric Attendance Detail' : 'Based on Register Manual Entries'];
       if (me.mode === 'full') remarks.push('Full attendance');
-      if (u.code && breezeCodes.has(u.code)) remarks.push('Breeze data replaced by manual entry');
+      if (me.breezeCode) remarks.push('Breeze data replaced by manual entry');
       rows.push({
-        state: (u.state || '').toUpperCase(), code: u.code || '', name: u.name, head: u.head || '', desig: u.desig || '',
+        state: (u.state || '').toUpperCase(), code: u.code || me.breezeCode || '', name: u.name, phone: u.phone || '', mkey: u.key, head: u.head || '', desig: u.desig || '',
         company: u.company || '', doj: null, dol: null, status: 'Active', location: canonState(u.state),
         cells, counts, total, grand: gridDates.length, hdDed, lDed, egDed, p3Ded: 0, payable, assumed, prevAdj: 0, prevSeen: 0,
         final: payable + assumed, remarks: remarks.join('; '), holApplied: 0, matched: true, manual: me.source || 'register', manualDays: gridDates.slice(), baseCells: {}
       });
     });
     const bcodes = new Set(breeze.emps.map(e => e.code.toUpperCase()));
-    const woSummary = { total: woList.length, notFound: woList.filter(w => w.code ? !bcodes.has(w.code) : false), noDay: woList.filter(w => !w.days.length) };
+    const woSummary = { total: woList.length, notFound: woList.filter(w => !w.breezeCode), noDay: woList.filter(w => !w.days.length) };
     return { woSummary, year, month, dim, cutoff, gridDates, prevDates: prevDates.filter(k => Object.values(prevDays).some(p => p[k] !== undefined)),
       allPrevDates: prevDates, missingDates, rows, opts,
       ignoredAfterCutoff: breeze.dates.filter(k => k.slice(0, 7) === ym && +k.slice(8) > cutoff) };
@@ -1054,7 +1103,7 @@ footer{text-align:center;color:#94a3b8;font-size:12px;padding:10px 0 30px}
     return wb;
   }
 
-  const api = { canonState, listCovers, parseWeekDays, toBook, parseBreeze, parseMaster, splitName, matchEmployees, nameScore, guessHolidayList, detectMonths, buildModel,
+  const api = { resolveBreezeCode, normPhone, canonState, listCovers, parseWeekDays, toBook, parseBreeze, parseMaster, splitName, matchEmployees, nameScore, guessHolidayList, detectMonths, buildModel,
     exportWorkbook, classify, codeStyle, fmtKey, shortKey, isTestId, MONTHS, DAYS, dowOf, daysInMonth, CODE_STYLE };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.AttCore = api;
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -1087,7 +1136,7 @@ async function load(kind, file, dz){
     if (kind === 'master') {
       const m = A.parseMaster(book);
       S.master = m;
-      st.textContent = '✓ ' + file.name + ' — ' + m.master.list.length + ' employees, ' + m.holidayLists.length + ' holiday lists' + (m.hasWeekOffSheet ? ', ' + m.weekOffs.length + ' week offs' : '') + (m.hasManualSheet ? ', ' + m.manualUsers.length + ' manual users' : '');
+      st.textContent = '✓ ' + file.name + ' — ' + m.master.list.length + ' employees, ' + m.holidayLists.length + ' holiday lists' + (m.hasWeekOffSheet ? ', ' + m.weekOffs.length + ' week offs' : '') + (m.hasManualSheet ? ', ' + m.manualUsers.length + ' manual users' : ', no Manual User sheet');
     } else {
       const b = A.parseBreeze(book);
       b.emps.forEach(e => { e.name = A.splitName(e.rawName).name; });
@@ -1194,6 +1243,7 @@ function renderMatch(){
     let badge;
     if (info.manual) badge = '<span class="badge b-blu">Set by you</span>';
     else if (cur>=0) badge = '<span class="badge b-grn">'+esc(info.how)+' '+Math.round(info.score*100)+'%</span>';
+    else if (e._dupName) badge = '<span class="badge b-red">Same name exists more than once — pick manually or add Emp Code</span>';
     else if (top[0] && top[0].s>=0.85) badge = '<span class="badge b-amb">Suggested: '+esc(list[top[0].idx].name)+' '+Math.round(top[0].s*100)+'%</span>';
     else badge = '<span class="badge b-red">Not in master</span>';
     const opt = (m,lbl) => '<option value="'+m.idx+'"'+(m.idx===cur?' selected':'')+'>'+esc(lbl||m.name)+' — '+esc(m.company)+', '+esc(m.state)+(usedBy[m.idx]&&usedBy[m.idx]!==e.code?'  (used by '+usedBy[m.idx]+')':'')+'</option>';
@@ -1239,11 +1289,14 @@ function renderNotes(){
   if (md.ignoredAfterCutoff.length) notes.push(['info','The report also has '+A.fmtKey(md.ignoredAfterCutoff[0])+' to '+A.fmtKey(md.ignoredAfterCutoff[md.ignoredAfterCutoff.length-1])+'. As per cut-off these days are paid as "Assumed" and will be checked next month. Choose "Full month" to use the actual codes instead.']);
   if (md.prevDates.length) notes.push(['info','Previous month status calculated from Breeze for '+md.prevDates.map(k=>A.fmtKey(k).slice(0,5)).join(', ')+'.']);
   else if (md.allPrevDates.length) notes.push(['info','Previous month advance days ('+A.shortKey(md.allPrevDates[0])+' to '+A.shortKey(md.allPrevDates[md.allPrevDates.length-1])+') are not in the uploaded report — upload the previous month report to fill that column automatically, or enter it in Excel.']);
+  if (S.master.dupPhones && S.master.dupPhones.length) notes.push(['err','<b>Same phone number on more than one employee in Employee Master:</b> ' + S.master.dupPhones.map(d=>esc(d.a.name)+' & '+esc(d.b.name)+' ('+d.phone+')').join(', ') + '. Phone numbers must be unique — please correct the master.']);
   const ws = md.woSummary;
   if (S.master.hasWeekOffSheet) {
     const applied = rows.reduce((a,r)=>a+(r.woApplied||0),0);
     let t = '<b>Week Off Master:</b> ' + ws.total + ' employee(s). WO set on ' + applied + ' day(s) where Breeze had another code (P4 days kept).';
-    if (ws.notFound.length) t += ' Not in Breeze report: ' + ws.notFound.map(w=>esc(w.name)+' ('+esc(w.code)+')').join(', ') + '.';
+    const byPh = (S.master.weekOffs||[]).filter(w=>w.linkHow && w.linkHow!=='Emp Code').length;
+    if (byPh) t += ' ' + byPh + ' linked by phone / name (no or different Emp Code).';
+    if (ws.notFound.length) t += ' Could not link to Breeze: ' + ws.notFound.map(w=>esc(w.name)+(w.code?' ('+esc(w.code)+')':'')+(w.phone?' ☎ '+esc(w.phone):'')).join(', ') + '.';
     if (ws.noDay.length) t += ' No fixed day, Breeze codes kept: ' + ws.noDay.map(w=>esc(w.name)+' — '+esc(w.text)).join(', ') + '.';
     notes.push(['info', t]);
   } else notes.push(['info','No <b>Week Off Master</b> sheet in the master file — week offs are taken as shown in Breeze.']);
@@ -1272,7 +1325,7 @@ function msKey(){ return 'attb-manual-' + ($('#sMonth').value || ''); }
 function saveManual(){ try { localStorage.setItem(msKey(), JSON.stringify(S.manual)); } catch(e) {} }
 function loadManual(){ try { const v = localStorage.getItem(msKey()); S.manual = v ? JSON.parse(v) : {}; } catch(e) { S.manual = {}; } }
 const normCode = c => String(c||'').toUpperCase().replace(/\s+/g,'');
-function breezeEmp(u){ return u.code ? S.breeze.emps.find(e => normCode(e.code) === normCode(u.code)) : null; }
+function breezeEmp(u){ const r = A.resolveBreezeCode(u, S.breeze, S.matches); return r ? Object.assign({ how: r.how }, S.breeze.emps.find(e => e.code === r.code)) : null; }
 function woDefault(u){
   const w = (S.master.weekOffs||[]).find(x => u.code && x.code === normCode(u.code));
   return w && w.days.length === 1 ? w.days[0] : 0;
@@ -1288,7 +1341,7 @@ function manualEntries(){
   return S.master.manualUsers.filter(u => S.manual[u.key] && S.manual[u.key].status === 'include')
     .map(u => { const m = S.manual[u.key]; return { user:u, source:m.source || 'register', mode:m.mode, weekOff:+m.weekOff, holId:m.holId, days:m.days }; });
 }
-function modelRow(u){ return S.model.rows.find(r => r.manual && normCode(r.code) === normCode(u.code) && (u.code || r.name === u.name)); }
+function modelRow(u){ return S.model.rows.find(r => r.manual && r.mkey === u.key); }
 // cells without manual edits (base) and with them
 function baseCells(u, m){
   const md = S.model;
@@ -1306,8 +1359,8 @@ function previewCells(u, m){
 function renderManual(){
   const box = $('#muBody'); if (!S.model) return;
   const users = S.master.manualUsers || [];
-  if (!S.master.hasManualSheet) { box.innerHTML = '<div class="notice n-info">No <b>Manual User</b> sheet found in the master file. To enter attendance by hand, add a sheet named <b>Manual User</b> with columns: Name, Employee Code, Company, Phone (optional: State, Designation, Reporting Head).</div>'; return; }
-  if (!users.length) { box.innerHTML = '<div class="hint">The Manual User sheet is empty.</div>'; return; }
+  if (!S.master.hasManualSheet) { box.innerHTML = '<div class="notice n-warn">No <b>Manual User</b> sheet found in the master file. Sheets found: <b>' + S.master.sheetNames.map(esc).join(', ') + '</b>. Add a sheet whose name contains <b>Manual</b> (e.g. "Manual User") with columns: Name, Employee Code, Company, Phone Number (optional: State, Designation, Reporting Head).</div>'; return; }
+  if (!users.length) { box.innerHTML = '<div class="notice n-warn">Sheet <b>' + esc(S.master.manualSheet) + '</b> was found but no employee rows were read. ' + (S.master.manualHeaders.length ? 'Headings found: <b>' + S.master.manualHeaders.map(esc).join(', ') + '</b>. Make sure there is a <b>Name</b> column and names are filled below it.' : 'No heading row with a <b>Name</b> column was found in the first 10 rows.') + ' After saving the file, upload the master again.</div>'; return; }
   const md = S.model;
   const pend = users.filter(u => mState(u).status === 'pending').length;
   const missingSrc = users.filter(u => S.manual[u.key].status === 'include' && !S.manual[u.key].source).length;
@@ -1320,7 +1373,10 @@ function renderManual(){
     const inc = m.status === 'include';
     const be = breezeEmp(u);
     h += '<div class="mu ' + (inc ? 'inc' : m.status === 'skip' ? 'skp' : '') + '" data-k="' + esc(u.key) + '">' +
-      '<div class="mu-h"><div class="who"><b>' + esc(u.name) + '</b>' + (be ? ' <span class="badge b-grn">Also in Breeze</span>' : '') + '<div class="hint mono">' + esc(u.code || 'No code') + ' · ' + esc(u.company || '—') + (u.phone ? ' · ' + esc(u.phone) : '') + (u.state ? ' · ' + esc(u.state) : '') + '</div></div>' +
+      '<div class="mu-h"><div class="who"><b>' + esc(u.name) + '</b>' + (be ? ' <span class="badge b-grn">Also in Breeze: ' + esc(be.code) + (be.how !== 'Emp Code' ? ' (by ' + be.how.toLowerCase() + ')' : '') + '</span>' : '') +
+      (u.linked ? ' <span class="badge b-blu" title="Name, code, company and state taken from Employee Master by phone number">Linked by phone</span>' : (u.phone ? ' <span class="badge b-amb" title="This phone number is not in Employee Master">Phone not in Employee Master</span>' : '')) +
+      (u.sheetName ? ' <span class="hint">(written as "' + esc(u.sheetName) + '" in Manual User)</span>' : '') +
+      (u.codeConflict ? ' <span class="badge b-red">Code differs from Employee Master (' + esc(u.codeConflict) + ')</span>' : '') + '<div class="hint mono">' + esc(u.code || 'No code') + ' · ' + esc(u.company || '—') + (u.phone ? ' · ☎ ' + esc(u.phone) : '') + (u.state ? ' · ' + esc(u.state) : '') + '</div></div>' +
       (m.status === 'pending' ? '<span class="badge b-amb">Pending</span>' : inc ? '<span class="badge b-blu">Included</span>' : '<span class="badge b-gry">Skipped</span>') +
       '<div class="seg"><button data-act="skip" class="' + (m.status === 'skip' ? 'on' : '') + '">Skip</button><button data-act="include" class="' + (inc ? 'on' : '') + '">Include</button></div></div>';
     if (inc) {
