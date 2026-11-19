@@ -42,7 +42,7 @@ select:focus,input:focus{outline:2px solid #bfdbfe;border-color:var(--blue)}
 .toggles{display:flex;gap:22px;margin-top:16px;flex-wrap:wrap}
 .tg{display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer}
 .tg input{width:16px;height:16px;accent-color:var(--navy)}
-.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:16px}
+.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:16px}
 .kpi{border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:linear-gradient(180deg,#fff,#f8fafc)}
 .kpi .v{font-size:24px;font-weight:800;letter-spacing:-.02em}
 .kpi .l{font-size:11.5px;color:var(--mute);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
@@ -81,6 +81,27 @@ tr:hover td{background:#fafcff}
 .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#0f172a;color:#fff;padding:11px 18px;border-radius:10px;font-size:13px;box-shadow:0 10px 30px rgba(0,0,0,.25);z-index:9;transition:.25s}
 .mono{font-family:'JetBrains Mono',monospace;font-size:12px}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.mu{border:1px solid var(--line);border-radius:12px;margin-bottom:10px;overflow:hidden}
+.mu-h{display:flex;align-items:center;gap:14px;padding:12px 14px;background:#fbfcfe;flex-wrap:wrap}
+.mu-h .who{flex:1;min-width:220px}
+.mu-h .who b{font-size:14px}
+.mu.inc{border-color:#93c5fd;box-shadow:0 0 0 3px #eff6ff}
+.mu.skp{opacity:.65}
+.mu-b{padding:14px;border-top:1px solid var(--line);display:grid;gap:14px}
+.row3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.pal{display:flex;gap:6px;flex-wrap:wrap}
+.pal button{border:2px solid transparent;border-radius:8px;padding:6px 11px;font:inherit;font-weight:700;font-size:12px;cursor:pointer;font-family:'JetBrains Mono',monospace}
+.pal button.on{border-color:#0f172a;box-shadow:0 2px 6px rgba(0,0,0,.15)}
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;max-width:560px}
+.cal .dh{font-size:10.5px;font-weight:700;color:#64748b;text-align:center;text-transform:uppercase}
+.cal .d{border-radius:8px;padding:6px 4px;text-align:center;cursor:pointer;border:1px solid rgba(0,0,0,.06);user-select:none;transition:.1s}
+.cal .d:hover{transform:translateY(-1px);box-shadow:0 3px 8px rgba(0,0,0,.1)}
+.cal .d small{display:block;font-size:10px;opacity:.75}
+.cal .d b{font-family:'JetBrains Mono',monospace;font-size:12px}
+.sum{font-size:12.5px;color:#334155;display:flex;gap:14px;flex-wrap:wrap}
+.sum b{color:var(--ink)}
+.full-note{background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;border-radius:10px;padding:10px 12px;font-size:13px}
+@media(max-width:900px){.row3{grid-template-columns:1fr}}
 footer{text-align:center;color:#94a3b8;font-size:12px;padding:10px 0 30px}
 @media(max-width:900px){.drops,.grid4,.kpis,.two{grid-template-columns:1fr}}
 </style>
@@ -98,7 +119,7 @@ footer{text-align:center;color:#94a3b8;font-size:12px;padding:10px 0 30px}
     <p class="sub">Files are read inside your browser only. Nothing is uploaded to any server.</p>
     <div class="drops">
       <label class="drop" id="dz-breeze"><span class="tag">REQUIRED</span><b>Breeze Attendance Summary Report</b><small>The .xlsx exported from Breeze App for the date range (e.g. 01-10 to 25-10).</small><div class="st"></div><input type="file" accept=".xlsx,.xls" data-k="breeze"></label>
-      <label class="drop" id="dz-master"><span class="tag">REQUIRED</span><b>Employee Master + Holiday Lists</b><small>Employee Master sheet (Name, Company, State; optional Emp Code, DOJ, DOL) and one holiday sheet per location.</small><div class="st"></div><input type="file" accept=".xlsx,.xls" data-k="master"></label>
+      <label class="drop" id="dz-master"><span class="tag">REQUIRED</span><b>Employee Master + Holiday Lists</b><small>Employee Master, holiday list per location, <b>Week Off Master</b> and <b>Manual User</b> sheets. State can be written as WB, West Bengal or WEST BENGAL.</small><div class="st"></div><input type="file" accept=".xlsx,.xls" data-k="master"></label>
       <label class="drop" id="dz-prev"><span class="tag opt">OPTIONAL</span><b>Previous Month Breeze Report</b><small>Used to auto-calculate the previous month status for days that were paid in advance (e.g. 26-09 to 30-09).</small><div class="st"></div><input type="file" accept=".xlsx,.xls" data-k="prev"></label>
     </div>
     <div id="loadMsg" style="margin-top:14px"></div>
@@ -136,14 +157,20 @@ footer{text-align:center;color:#94a3b8;font-size:12px;padding:10px 0 30px}
   </div>
 
   <section class="card">
-    <h2><span class="step">5</span>Preview & export</h2>
+    <h2><span class="step">5</span>Manual attendance users</h2>
+    <p class="sub">Employees listed in the <b>Manual User</b> sheet of the master file. Skip them, or include them and enter attendance by hand.</p>
+    <div id="muBody"></div>
+  </section>
+
+  <section class="card">
+    <h2><span class="step">6</span>Preview & export</h2>
     <p class="sub" id="prevSub"></p>
     <div id="notes"></div>
     <div class="kpis" id="kpis"></div>
     <div class="legend" id="legend"></div>
     <div class="bar">
       <input type="search" id="q" placeholder="Search name, code, head…">
-      <div class="seg" id="flt"><button data-f="all" class="on">All</button><button data-f="att">Needs attention</button><button data-f="inact">Inactive</button><button data-f="nm">Not in master</button></div>
+      <div class="seg" id="flt"><button data-f="all" class="on">All</button><button data-f="att">Needs attention</button><button data-f="inact">Inactive</button><button data-f="nm">Not in master</button><button data-f="man">Manual</button></div>
       <span style="flex:1"></span><span class="hint" id="cnt"></span>
     </div>
     <div class="tbl"><table><thead><tr><th>Employee</th><th>Location / Company</th><th>Day codes</th><th class="num">Absent</th><th class="num">Payable</th><th class="num">Prev. Month</th><th class="num">Assumed</th><th class="num">Final</th><th>Remarks</th></tr></thead><tbody id="pBody"></tbody></table></div>
@@ -287,8 +314,11 @@ footer{text-align:center;color:#94a3b8;font-size:12px;padding:10px 0 30px}
 
   /* ---------- Employee master + holiday lists ---------- */
   function parseMaster(wb) {
-    let master = null; const holidayLists = [];
+    let master = null; const holidayLists = []; let manualUsers = null; let weekOffs = null;
     for (const ws of wb) {
+      if (/manual\s*user/i.test(ws.name)) { manualUsers = parseManualUsers(ws); continue; }
+      if (/week\s*-?\s*off/i.test(ws.name)) { weekOffs = parseWeekOff(ws); continue; }
+      if (/read\s*me|instruction/i.test(ws.name)) continue;
       // find header row in first 6 rows
       let hdrRow = 0, h = [];
       for (let r = 1; r <= Math.min(ws.rowCount, 6) && !hdrRow; r++) {
@@ -331,25 +361,101 @@ footer{text-align:center;color:#94a3b8;font-size:12px;padding:10px 0 30px}
       }
     }
     if (!master) throw new Error('Employee Master sheet not found (need columns "Name" and "Company").');
-    return { master, holidayLists };
+    return { master, holidayLists, manualUsers: manualUsers || [], hasManualSheet: !!manualUsers, weekOffs: weekOffs || [], hasWeekOffSheet: !!weekOffs };
+  }
+
+  // "Manual User" sheet: Name, Employee Code, Company, Phone (+ optional State, Designation, Reporting Head)
+  function parseManualUsers(ws) {
+    let hdrRow = 0, h = [];
+    for (let r = 1; r <= Math.min(ws.rowCount, 6) && !hdrRow; r++) {
+      const vals = rowVals(ws, r).map(v => clean(txt(v)).toLowerCase());
+      if (vals.some(x => x === 'name' || x.includes('employee name') || x === 'emp name')) { hdrRow = r; h = vals; }
+    }
+    if (!hdrRow) return [];
+    const f = re => h.findIndex(x => re.test(x));
+    const c = { name: f(/^(employee\s*|emp\s*)?name$/), code: f(/(emp(loyee)?\s*(code|id))|^code$/), company: f(/company/),
+      phone: f(/phone|mobile|contact/), state: f(/^state$|location/), desig: f(/designation/), head: f(/reporting|head|manager/) };
+    const out = [];
+    for (let r = hdrRow + 1; r <= ws.rowCount; r++) {
+      const v = rowVals(ws, r);
+      const g = i => i >= 0 ? clean(txt(v[i])) : '';
+      const name = g(c.name);
+      if (!name) continue;
+      const code = g(c.code).toUpperCase();
+      out.push({ key: code || ('NAME:' + name.toUpperCase()), name, code, company: g(c.company), phone: g(c.phone),
+        state: g(c.state), desig: g(c.desig), head: g(c.head) });
+    }
+    return out;
+  }
+
+  // "Week Off Master" sheet: Name, Designation, Weekly Off Schedule, Mobile Number, Code
+  const WDN = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+  function parseWeekDays(t) {
+    const out = new Set();
+    const u = String(t || '').toUpperCase();
+    (u.match(/\b(SUN|MON|TUE|TUES|WED|THU|THUR|THURS|FRI|SAT)[A-Z]*/g) || []).forEach(w => { const i = WDN.indexOf(w.slice(0, 3)); if (i >= 0) out.add(i); });
+    return [...out].sort();
+  }
+  function parseWeekOff(ws) {
+    let hdrRow = 0, h = [];
+    for (let r = 1; r <= Math.min(ws.rowCount, 6) && !hdrRow; r++) {
+      const vals = rowVals(ws, r).map(v => clean(txt(v)).toLowerCase());
+      if (vals.some(x => /week/.test(x)) && vals.some(x => /name|code/.test(x))) { hdrRow = r; h = vals; }
+    }
+    if (!hdrRow) return [];
+    const f = re => h.findIndex(x => re.test(x));
+    const c = { name: f(/name/), code: f(/(emp(loyee)?\s*(code|id))|^code$/), desig: f(/designation/), wo: f(/week/), phone: f(/phone|mobile|contact/) };
+    const out = [];
+    for (let r = hdrRow + 1; r <= ws.rowCount; r++) {
+      const v = rowVals(ws, r);
+      const g = i => i >= 0 ? clean(txt(v[i])) : '';
+      const name = g(c.name), code = g(c.code).toUpperCase().replace(/\s+/g, '');
+      if (!name && !code) continue;
+      const text = g(c.wo);
+      out.push({ name, code, desig: g(c.desig), text, days: parseWeekDays(text), phone: g(c.phone) });
+    }
+    return out;
+  }
+
+  /* ---------- state names: WB / West Bengal / WEST BENGAL / North Bengal are the same ---------- */
+  const STATES = {
+    'West Bengal': ['WESTBENGAL', 'WB', 'NORTHBENGAL', 'BENGAL', 'SOUTHBENGAL', 'KOLKATA'],
+    'Odisha': ['ODISHA', 'ORISSA', 'OD'], 'Bihar': ['BIHAR', 'BR'], 'Jharkhand': ['JHARKHAND', 'JH'],
+    'Uttar Pradesh': ['UTTARPRADESH', 'UP'], 'Assam': ['ASSAM', 'AS'], 'Madhya Pradesh': ['MADHYAPRADESH', 'MP'],
+    'Maharashtra': ['MAHARASHTRA', 'MH'], 'Delhi': ['DELHI', 'NEWDELHI', 'DL', 'NCR'], 'Rajasthan': ['RAJASTHAN', 'RJ'],
+    'Gujarat': ['GUJARAT', 'GJ'], 'Punjab': ['PUNJAB', 'PB'], 'Haryana': ['HARYANA', 'HR'], 'Uttarakhand': ['UTTARAKHAND', 'UK', 'UTTARANCHAL'],
+    'Chhattisgarh': ['CHHATTISGARH', 'CHATTISGARH', 'CG'], 'Sikkim': ['SIKKIM', 'SK'], 'Tripura': ['TRIPURA', 'TR'],
+    'Meghalaya': ['MEGHALAYA', 'ML'], 'Manipur': ['MANIPUR', 'MN'], 'Nagaland': ['NAGALAND', 'NL'], 'Mizoram': ['MIZORAM', 'MZ'],
+    'Arunachal Pradesh': ['ARUNACHALPRADESH', 'AR'], 'Andhra Pradesh': ['ANDHRAPRADESH', 'AP'], 'Telangana': ['TELANGANA', 'TS', 'TG'],
+    'Karnataka': ['KARNATAKA', 'KA'], 'Tamil Nadu': ['TAMILNADU', 'TN'], 'Kerala': ['KERALA', 'KL'], 'Goa': ['GOA', 'GA'],
+    'Himachal Pradesh': ['HIMACHALPRADESH', 'HP'], 'Jammu & Kashmir': ['JAMMUKASHMIR', 'JAMMUANDKASHMIR', 'JK']
+  };
+  function letters(s) { return String(s || '').toUpperCase().replace(/[^A-Z]/g, ''); }
+  function canonState(s) {
+    const k = letters(s);
+    if (!k) return '';
+    for (const [name, al] of Object.entries(STATES)) if (al.includes(k)) return name;
+    for (const [name, al] of Object.entries(STATES)) if (al[0].length > 4 && (k.startsWith(al[0]) || k.endsWith(al[0]))) return name;
+    if (k.includes('BENGAL')) return 'West Bengal';
+    return clean(s).toLowerCase().replace(/\b[a-z]/g, c => c.toUpperCase());
+  }
+  // which canonical states a holiday list label covers ("Bihar Jharkhand" -> Bihar, Jharkhand)
+  function listCovers(label) {
+    const words = clean(String(label).replace(/holiday\s*list/i, '').replace(/[-,&\/+]|\band\b/gi, ' ')).split(' ').filter(Boolean);
+    const out = new Set();
+    for (let n = 3; n >= 1; n--) for (let i = 0; i + n <= words.length; i++) {
+      const c = canonState(words.slice(i, i + n).join(' '));
+      if (Object.prototype.hasOwnProperty.call(STATES, c)) out.add(c);
+    }
+    return out;
   }
 
   /* ---------- state -> holiday list mapping ---------- */
-  const STATE_ALIAS = { UTTARPRADESH: 'UP', ORISSA: 'ODISHA', NORTHBENGAL: 'WESTBENGAL', WB: 'WESTBENGAL' };
-  function letters(s) { return String(s || '').toUpperCase().replace(/[^A-Z]/g, ''); }
   function guessHolidayList(state, lists) {
-    let sk = letters(state);
-    Object.keys(STATE_ALIAS).forEach(a => { if (sk.includes(a)) sk = sk + '|' + STATE_ALIAS[a]; });
-    const parts = sk.split('|');
-    for (const l of lists) {
-      const lk = letters(l.label);
-      if (!lk) continue;
-      for (const p of parts) {
-        if (lk.length <= 3) { if (p === lk) return l.id; }
-        else if (p.includes(lk) || (p.length > 3 && lk.includes(p))) return l.id;
-      }
-    }
-    return '';
+    const c = canonState(state);
+    if (!c) return '';
+    const hit = lists.find(l => listCovers(l.label).has(c));
+    return hit ? hit.id : '';
   }
 
   /* ---------- name matching ---------- */
@@ -453,14 +559,27 @@ footer{text-align:center;color:#94a3b8;font-size:12px;padding:10px 0 30px}
     };
 
     const rows = [];
+    const woList = masterData.weekOffs || [];
+    const woFor = (code, name) => {
+      const c = String(code || '').toUpperCase().replace(/\s+/g, '');
+      let w = c ? woList.find(x => x.code && x.code === c) : null;
+      if (!w && name) { const best = woList.map(x => ({ x, s: x.name ? nameScore(name, x.name).s : 0 })).sort((a, b) => b.s - a.s)[0]; if (best && best.s >= 0.92 && !best.x.code) w = best.x; }
+      return w || null;
+    };
+    const manualEntries = (opts.manualEntries || []);
+    const manualCodes = new Set(manualEntries.map(m => (m.user.code || '').toUpperCase()).filter(Boolean));
     breeze.emps.forEach(e => {
       if (opts.hideTest && isTestId(e)) return;
+      if (manualCodes.has(e.code.toUpperCase())) return;
       const ns = splitName(e.rawName);
       const mIdx = opts.matches[e.code];
       const m = mIdx !== undefined && mIdx >= 0 ? masterData.master.list[mIdx] : null;
       if (!m && !opts.includeUnmatched) return;
-      const locState = m && m.state ? m.state : e.state;
-      const hol = holidaysFor(stateKeyFor(locState, e.state, opts));
+      const locState = canonState(m && m.state ? m.state : e.state);
+      const hol = holidaysFor(locState);
+      const wo = woFor(e.code, ns.name);
+      const woDays = wo ? wo.days : [];
+      let woApplied = 0;
       const dol = (m && m.dol) || ns.dol;
       const doj = m && m.doj ? m.doj : null;
       const cells = {}; const counts = { WO: 0, H: 0, P: 0, P4: 0, L: 0, HD: 0, EG: 0, AB: 0, OTHER: 0, NA: 0, P3: 0, P5: 0, BLANK: 0 };
@@ -468,7 +587,11 @@ footer{text-align:center;color:#94a3b8;font-size:12px;padding:10px 0 30px}
       gridDates.forEach(k => {
         let c = e.days[k] !== undefined ? e.days[k] : '';
         if ((dol && k > dol) || (doj && k < doj)) c = '-';
-        else if (hol[k]) { if (c !== 'H') holApplied++; c = 'H'; }
+        else {
+          // Week Off Master: on the employee's week-off day put WO, unless Breeze shows P4 (worked on week off) in any combination
+          if (woDays.length && woDays.includes(dowOf(k)) && !c.includes('P4') && c !== 'WO') { c = 'WO'; woApplied++; }
+          if (hol[k]) { if (c !== 'H') holApplied++; c = 'H'; }
+        }
         cells[k] = c;
         const t = classify(c);
         counts[t]++;
@@ -499,14 +622,22 @@ footer{text-align:center;color:#94a3b8;font-size:12px;padding:10px 0 30px}
       // previous month adjustment
       let prevAdj = 0, prevSeen = 0;
       const pd = prevDays[e.code] || {};
-      const phol = holidaysFor(stateKeyFor(locState, e.state, opts));
       prevDates.forEach(k => {
         if (pd[k] === undefined) return;
         if ((dol && k > dol) || (doj && k < doj)) return;
-        let c = pd[k]; if (phol[k]) c = 'H';
+        let c = pd[k];
+        if (woDays.length && woDays.includes(dowOf(k)) && !c.includes('P4')) c = 'WO';
+        if (hol[k]) c = 'H';
         prevSeen++;
         prevAdj += dayValue(classify(c), opts.leavePaid) - 1;
       });
+      if (wo) {
+        const dn = woDays.map(d => DAYS[d]).join(' & ');
+        if (!woDays.length) remarks.push('Week off "' + wo.text + '" — no fixed day, Breeze codes kept');
+        else if (woApplied) remarks.push('Week off ' + dn + ' (Week Off Master) set on ' + woApplied + ' day(s)');
+        const bd = parseWeekDays(e.desig);
+        if (woDays.length && bd.length && bd.join() !== woDays.join()) remarks.push('Breeze designation says ' + bd.map(d => DAYS[d]).join(' & ') + ', Week Off Master says ' + dn);
+      }
       if (!m) remarks.push('Not found in Employee Master');
       else if (opts.matchInfo && opts.matchInfo[e.code] && opts.matchInfo[e.code].how && !/Exact|Emp Code/.test(opts.matchInfo[e.code].how))
         remarks.push('Name matched to master as "' + m.name + '"');
@@ -517,14 +648,49 @@ footer{text-align:center;color:#94a3b8;font-size:12px;padding:10px 0 30px}
         state: e.state, code: e.code, name: ns.name, head: e.head.replace(/\s+/g, ' ').trim(), desig: e.desig,
         company: m ? m.company : '', doj, dol, status: inactive ? 'Inactive' : (e.status || 'Active'),
         location: locState, cells, counts, total, grand, hdDed, lDed, egDed, p3Ded, payable, assumed, prevAdj, prevSeen, final,
-        remarks: remarks.join('; '), holApplied, matched: !!m
+        remarks: remarks.join('; '), holApplied, woApplied, weekOff: wo ? (woDays.length ? woDays.map(d => DAYS[d]).join(' & ') : wo.text) : '', matched: !!m
       });
     });
-    return { year, month, dim, cutoff, gridDates, prevDates: prevDates.filter(k => Object.values(prevDays).some(p => p[k] !== undefined)),
+    // ---- manually entered employees ----
+    const breezeCodes = new Set(breeze.emps.map(e => e.code.toUpperCase()));
+    manualEntries.forEach(me => {
+      const u = me.user;
+      const hol = {};
+      if (me.mode !== 'full' && me.holId && lists[me.holId]) lists[me.holId].items.forEach(it => { hol[it.key] = it.name; });
+      const cells = {}; const counts = { WO: 0, H: 0, P: 0, P4: 0, L: 0, HD: 0, EG: 0, AB: 0, OTHER: 0, NA: 0, P3: 0, P5: 0, BLANK: 0 };
+      gridDates.forEach(k => {
+        let c = 'P';
+        if (me.mode !== 'full') {
+          if (me.weekOff >= 0 && dowOf(k) === me.weekOff) c = 'WO';
+          if (hol[k]) c = 'H';
+          if (me.days && me.days[k]) c = me.days[k];
+        }
+        cells[k] = c;
+        counts[classify(c)]++;
+      });
+      const total = counts.WO + counts.H + counts.P + counts.P4 + counts.L + counts.HD + counts.EG + counts.AB;
+      const hdDed = counts.HD * 0.5;
+      const lDed = opts.leavePaid ? 0 : counts.L;
+      const egDed = opts.egN > 0 ? Math.floor(counts.EG / opts.egN) : 0;
+      const payable = total - counts.AB - hdDed - lDed - egDed;
+      const assumed = dim - cutoff;
+      const remarks = [me.source === 'biometric' ? 'Based on Biometric Attendance Detail' : 'Based on Register Manual Entries'];
+      if (me.mode === 'full') remarks.push('Full attendance');
+      if (u.code && breezeCodes.has(u.code)) remarks.push('Breeze data replaced by manual entry');
+      rows.push({
+        state: (u.state || '').toUpperCase(), code: u.code || '', name: u.name, head: u.head || '', desig: u.desig || '',
+        company: u.company || '', doj: null, dol: null, status: 'Active', location: canonState(u.state),
+        cells, counts, total, grand: gridDates.length, hdDed, lDed, egDed, p3Ded: 0, payable, assumed, prevAdj: 0, prevSeen: 0,
+        final: payable + assumed, remarks: remarks.join('; '), holApplied: 0, matched: true, manual: me.source || 'register'
+      });
+    });
+    const bcodes = new Set(breeze.emps.map(e => e.code.toUpperCase()));
+    const woSummary = { total: woList.length, notFound: woList.filter(w => w.code ? !bcodes.has(w.code) : false), noDay: woList.filter(w => !w.days.length) };
+    return { woSummary, year, month, dim, cutoff, gridDates, prevDates: prevDates.filter(k => Object.values(prevDays).some(p => p[k] !== undefined)),
       allPrevDates: prevDates, missingDates, rows, opts,
       ignoredAfterCutoff: breeze.dates.filter(k => k.slice(0, 7) === ym && +k.slice(8) > cutoff) };
   }
-  function stateKeyFor(locState, bState, opts) { return opts.holidayMap[locState] !== undefined ? locState : bState; }
+  
 
   /* ---------- Excel export ---------- */
   const C = {
@@ -664,6 +830,7 @@ footer{text-align:center;color:#94a3b8;font-size:12px;padding:10px 0 30px}
         c.fill = fill(band); c.border = box;
         c.alignment = { vertical: 'middle', horizontal: j >= 5 ? 'center' : 'left', indent: j < 5 ? 0 : 0 };
       });
+      if (r.manual) { [2, 3].forEach(ci => { row.getCell(ci).fill = fill('FFE0F2FE'); }); }
       if (!r.matched) { row.getCell(6).fill = fill('FFFFE4E6'); row.getCell(6).value = 'NOT IN MASTER'; row.getCell(6).font = { size: 8, bold: true, color: { argb: 'FFBE123C' } }; }
       if (r.status === 'Inactive') { row.getCell(9).font = { size: 9, bold: true, color: { argb: 'FFB91C1C' } }; }
       model.gridDates.forEach((k, j) => {
@@ -796,13 +963,14 @@ footer{text-align:center;color:#94a3b8;font-size:12px;padding:10px 0 30px}
     r = r + legend.length + 2;
     sec(r, 'HOW THE CALCULATION WORKS', C.grpPay);
     const ex = [
-      ['1. Day codes', 'Each date cell is the code from the Breeze report for ' + fmtKey(model.gridDates[0]) + ' to ' + fmtKey(model.gridDates[nD - 1]) + '. On a holiday of the employee\'s location (holiday list from the Master file, state taken from Employee Master) the code is replaced with H. Before the date of joining (DOJ from Employee Master) and after the date of leaving (DOL from Employee Master, else the "INACTIVE- date" in the Breeze name) the cell shows "-" and is not counted.'],
+      ['1. Day codes', 'Each date cell is the code from the Breeze report for ' + fmtKey(model.gridDates[0]) + ' to ' + fmtKey(model.gridDates[nD - 1]) + '. On the employee\'s week-off day from the Week Off Master the code becomes WO (Leave, Absent etc. on that day are replaced), except when Breeze shows P4 in any combination (P4, P4EG, P4HD…) — that means the employee worked on the week off, so it is kept. On a holiday of the employee\'s location (holiday list from the Master file, state taken from Employee Master) the code is replaced with H. Before the date of joining (DOJ from Employee Master) and after the date of leaving (DOL from Employee Master, else the "INACTIVE- date" in the Breeze name) the cell shows "-" and is not counted.'],
       ['2. Day Count', 'Every day is counted once, also for combined codes, by priority: Absent (AB) > Half Day (HD) > Early Going (EG) > Leave (L) > WO Worked (P4) > WO > Holiday (H) > Present (any other code with P). Example: P3EG = Early Going, HDP3 = Half Day, P5P3 = Present. TOTAL = sum of these; Grand Total = filled days. If they differ the TOTAL cell turns red (unknown code).'],
       ['3. Flags', 'No Logout (P3) and No First Call (P5) are counted wherever they appear, inside any combination (P3EG, HDP3, P5P3...). They do not change the day type; they only drive the Auto Logout Deduction rule.'],
       ['4. Deductions', 'Half Day Deduction = Half Day × 0.5.   Leave Deduction = Leave Taken if rule "Leave is paid" = No, else 0.   Early Going Deduction = INT(Early Going ÷ rule value).   Auto Logout Deduction = INT(No Logout ÷ rule value).'],
-      ['5. Payable Days as per Breeze', '= TOTAL − Absent − Half Day Deduction − Leave Deduction − Early Going Deduction − Auto Logout Deduction.   (So: Present, WO, Holiday, WO Worked, Leave (if paid) and Early Going count 1 day; Half Day counts 0.5; Absent counts 0.)'],
+      ['5. Payable Days as per Breeze', '= TOTAL − Absent − Half Day Deduction − Leave Deduction − Early Going Deduction − Auto Logout Deduction.   A day with HD in any code (HD, P3HD, P4HD…) is present but paid 0.5. A day with EG in any code (EG, P3EG, P4EG…) is present, and every ' + model.opts.egN + ' EG days cut 1 day' + (model.opts.egN ? '' : ' (rule off)') + '. Absent counts 0' + (model.opts.leavePaid ? '.' : '; Leave is deducted.')],
       ['6. Assumed days', model.cutoff < model.dim ? 'Attendance is taken till ' + pad(model.cutoff) + '/' + pad(model.month) + '. Days ' + asLbl + ' (' + (model.dim - model.cutoff) + ' days) are added as payable in advance. For an employee who left, only days up to the leaving date are added.' : 'Full month attendance is used, so no days are assumed.'],
       ['7. Previous month status', model.prevDates.length ? 'Previous month days ' + prevLbl + ' were paid in advance last month. Their actual status from Breeze is checked now: Absent = −1, Half Day = −0.5' + (model.opts.leavePaid ? '' : ', Leave = −1') + ', others = 0. That total is in this column.' : 'Enter the adjustment for the previous month\'s advance days here (no previous month data was uploaded). Absent = −1, Half Day = −0.5.'],
+      ['Manual entries', 'Employees from the "Manual User" sheet are entered in the tool (light blue Emp Code and Name). Remarks show the source: "Based on Register Manual Entries" or "Based on Biometric Attendance Detail". "Full attendance" means every day is Present (no week off, holiday, leave, half day or early going).'],
       ['8. Final Payable Days', '= Payable Days as per Breeze + Other Adjustment + MELA-EDF + Previous Month Status + Assumed days.   Yellow columns are for manual entry.']
     ];
     ex.forEach((e, i) => {
@@ -859,7 +1027,7 @@ footer{text-align:center;color:#94a3b8;font-size:12px;padding:10px 0 30px}
     return wb;
   }
 
-  const api = { toBook, parseBreeze, parseMaster, splitName, matchEmployees, nameScore, guessHolidayList, detectMonths, buildModel,
+  const api = { canonState, listCovers, parseWeekDays, toBook, parseBreeze, parseMaster, splitName, matchEmployees, nameScore, guessHolidayList, detectMonths, buildModel,
     exportWorkbook, classify, codeStyle, fmtKey, shortKey, isTestId, MONTHS, DAYS, dowOf, daysInMonth, CODE_STYLE };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.AttCore = api;
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -892,7 +1060,7 @@ async function load(kind, file, dz){
     if (kind === 'master') {
       const m = A.parseMaster(book);
       S.master = m;
-      st.textContent = '✓ ' + file.name + ' — ' + m.master.list.length + ' employees, ' + m.holidayLists.length + ' holiday lists';
+      st.textContent = '✓ ' + file.name + ' — ' + m.master.list.length + ' employees, ' + m.holidayLists.length + ' holiday lists' + (m.hasWeekOffSheet ? ', ' + m.weekOffs.length + ' week offs' : '') + (m.hasManualSheet ? ', ' + m.manualUsers.length + ' manual users' : '');
     } else {
       const b = A.parseBreeze(book);
       b.emps.forEach(e => { e.name = A.splitName(e.rawName).name; });
@@ -916,6 +1084,7 @@ function init(kind){
     const best = months.slice().sort((a,b)=>b.count-a.count)[0];
     $('#sMonth').innerHTML = months.map(m => '<option value="'+m.ym+'"'+(m===best?' selected':'')+'>'+m.label+' ('+m.count+' days in report)</option>').join('');
     fillCut();
+    loadManual();
   }
   run();
 }
@@ -931,7 +1100,7 @@ function fillCut(){
   h += '<option value="'+dim+'"'+(def===dim?' selected':'')+'>Full month (no assumed days)</option>';
   $('#sCut').innerHTML = h;
 }
-['#sMonth'].forEach(s => $(s).addEventListener('change', () => { fillCut(); run(); }));
+['#sMonth'].forEach(s => $(s).addEventListener('change', () => { fillCut(); loadManual(); run(); }));
 ['#sCut','#sLeave','#sEG','#sP3','#sHide','#sUnm'].forEach(s => $(s).addEventListener('change', run));
 $('#q').addEventListener('input', renderPreview);
 $('#flt').addEventListener('click', e => { const b=e.target.closest('button'); if(!b) return; S.filter=b.dataset.f; document.querySelectorAll('#flt button').forEach(x=>x.classList.toggle('on',x===b)); renderPreview(); });
@@ -940,7 +1109,7 @@ function opts(){
   const ym = $('#sMonth').value;
   return { year:+ym.slice(0,4), month:+ym.slice(5), cutoff:+$('#sCut').value, leavePaid:$('#sLeave').value==='1',
     egN:+$('#sEG').value, p3N:$('#sP3').checked ? 3 : 0, hideTest:$('#sHide').checked, includeUnmatched:$('#sUnm').checked,
-    prevBreeze:S.prev, holidayMap:S.holMap, matches:S.matches, matchInfo:S.matchInfo };
+    prevBreeze:S.prev, holidayMap:S.holMap, manualEntries: manualEntries(), matches:S.matches, matchInfo:S.matchInfo };
 }
 
 function locations(){
@@ -950,7 +1119,7 @@ function locations(){
     if ($('#sHide').checked && A.isTestId(e)) return;
     const m = S.matches[e.code] >= 0 ? list[S.matches[e.code]] : null;
     if (!m && !$('#sUnm').checked) return;
-    const loc = m && m.state ? m.state : e.state;
+    const loc = A.canonState(m && m.state ? m.state : e.state);
     out[loc] = (out[loc]||0) + 1;
   });
   return out;
@@ -962,7 +1131,7 @@ function run(){
   Object.keys(locs).forEach(l => { if (S.holMap[l] === undefined) S.holMap[l] = A.guessHolidayList(l, lists); });
   Object.keys(S.holMap).forEach(l => { if (!locs[l]) delete S.holMap[l]; });
   S.model = A.buildModel(S.breeze, S.master, opts());
-  renderHol(locs); renderMatch(); renderPreview(); renderNotes();
+  renderHol(locs); renderMatch(); renderManual(); renderPreview(); renderNotes();
 }
 
 /* ---- holiday mapping ---- */
@@ -1024,9 +1193,10 @@ function renderPreview(){
   if (S.filter==='att') rows = rows.filter(needs);
   if (S.filter==='inact') rows = rows.filter(r=>r.status==='Inactive');
   if (S.filter==='nm') rows = rows.filter(r=>!r.matched);
+  if (S.filter==='man') rows = rows.filter(r=>r.manual);
   $('#cnt').textContent = rows.length + ' of ' + md.rows.length + ' employees';
   $('#pBody').innerHTML = rows.map(r =>
-    '<tr><td><b>'+esc(r.name)+'</b><div class="hint mono">'+esc(r.code)+' · '+esc(r.desig)+(r.status==='Inactive'?' · <span style="color:#b91c1c;font-weight:700">Inactive</span>':'')+'</div></td>'+
+    '<tr><td><b>'+esc(r.name)+'</b>'+(r.manual?' <span class="badge b-blu">Manual</span>':'')+'<div class="hint mono">'+esc(r.code)+' · '+esc(r.desig)+(r.status==='Inactive'?' · <span style="color:#b91c1c;font-weight:700">Inactive</span>':'')+'</div></td>'+
     '<td>'+esc(r.location)+'<div class="hint">'+(r.matched?esc(r.company):'<span class="badge b-red">Not in master</span>')+'</div></td>'+
     '<td><div class="strip">'+md.gridDates.map(k=>chip(r.cells[k])).join('')+'</div></td>'+
     '<td class="num" style="color:#b91c1c">'+r.counts.AB+'</td><td class="num">'+n(r.payable)+'</td><td class="num">'+(md.prevDates.length?n(r.prevAdj):'<span class="hint">—</span>')+'</td><td class="num">'+r.assumed+'</td>'+
@@ -1042,6 +1212,14 @@ function renderNotes(){
   if (md.ignoredAfterCutoff.length) notes.push(['info','The report also has '+A.fmtKey(md.ignoredAfterCutoff[0])+' to '+A.fmtKey(md.ignoredAfterCutoff[md.ignoredAfterCutoff.length-1])+'. As per cut-off these days are paid as "Assumed" and will be checked next month. Choose "Full month" to use the actual codes instead.']);
   if (md.prevDates.length) notes.push(['info','Previous month status calculated from Breeze for '+md.prevDates.map(k=>A.fmtKey(k).slice(0,5)).join(', ')+'.']);
   else if (md.allPrevDates.length) notes.push(['info','Previous month advance days ('+A.shortKey(md.allPrevDates[0])+' to '+A.shortKey(md.allPrevDates[md.allPrevDates.length-1])+') are not in the uploaded report — upload the previous month report to fill that column automatically, or enter it in Excel.']);
+  const ws = md.woSummary;
+  if (S.master.hasWeekOffSheet) {
+    const applied = rows.reduce((a,r)=>a+(r.woApplied||0),0);
+    let t = '<b>Week Off Master:</b> ' + ws.total + ' employee(s). WO set on ' + applied + ' day(s) where Breeze had another code (P4 days kept).';
+    if (ws.notFound.length) t += ' Not in Breeze report: ' + ws.notFound.map(w=>esc(w.name)+' ('+esc(w.code)+')').join(', ') + '.';
+    if (ws.noDay.length) t += ' No fixed day, Breeze codes kept: ' + ws.noDay.map(w=>esc(w.name)+' — '+esc(w.text)).join(', ') + '.';
+    notes.push(['info', t]);
+  } else notes.push(['info','No <b>Week Off Master</b> sheet in the master file — week offs are taken as shown in Breeze.']);
   $('#notes').innerHTML = notes.map(([t,h])=>'<div class="notice n-'+t+'">'+h+'</div>').join('');
   const hol = rows.reduce((a,r)=>a+r.holApplied,0);
   const att = rows.filter(needs).length;
@@ -1050,15 +1228,119 @@ function renderNotes(){
     '<div class="kpi"><div class="l">Employees</div><div class="v">'+rows.length+'</div></div>'+
     '<div class="kpi"><div class="l">Holiday marks added</div><div class="v">'+hol+'</div></div>'+
     '<div class="kpi '+(att?'warn':'good')+'"><div class="l">Needs attention</div><div class="v">'+att+'</div></div>'+
+    '<div class="kpi"><div class="l">Manual entries</div><div class="v">'+rows.filter(r=>r.manual).length+'</div></div>'+
     '<div class="kpi"><div class="l">Inactive / left</div><div class="v">'+rows.filter(r=>r.status==='Inactive').length+'</div></div>'+
     '<div class="kpi good"><div class="l">Total final payable days</div><div class="v">'+n(fin)+'</div></div>';
   const lg = [['P','Present'],['AB','Absent'],['WO','Weekly Off'],['H','Holiday'],['L','Leave'],['HD','Half Day'],['EG','Early Going'],['P3','Present with flag (P3 / P5)'],['P4','Worked on WO'],['-','Before joining / after leaving']];
   $('#legend').innerHTML = lg.map(([c,t])=>{const s=A.codeStyle(c);return '<span><i style="background:'+hex(s.bg)+';color:'+hex(s.fg)+'">'+c+'</i>'+t+'</span>';}).join('');
 }
 
+
+/* ---- manual users ---- */
+const MCODES = ['P','AB','L','WO','HD','EG','H'];
+const MNAMES = {P:'Present',AB:'Absent',L:'Leave',WO:'Week Off',HD:'Half Day',EG:'Early Going',H:'Holiday'};
+const WD = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+S.manual = {}; S.paint = {};
+function msKey(){ return 'attb-manual-' + ($('#sMonth').value || ''); }
+function saveManual(){ try { localStorage.setItem(msKey(), JSON.stringify(S.manual)); } catch(e) {} }
+function loadManual(){ try { const v = localStorage.getItem(msKey()); S.manual = v ? JSON.parse(v) : {}; } catch(e) { S.manual = {}; } }
+function mState(u){
+  if (!S.manual[u.key]) S.manual[u.key] = { status:'pending', source:'', mode:'full', weekOff: woDefault(u), holId: A.guessHolidayList(u.state || '', S.master.holidayLists), days:{} };
+  return S.manual[u.key];
+}
+function woDefault(u){
+  const w = (S.master.weekOffs||[]).find(x => u.code && x.code === u.code.toUpperCase().replace(/\s+/g,''));
+  return w && w.days.length === 1 ? w.days[0] : 0;
+}
+function manualEntries(){
+  if (!S.master || !S.master.manualUsers) return [];
+  return S.master.manualUsers.filter(u => S.manual[u.key] && S.manual[u.key].status === 'include')
+    .map(u => { const m = S.manual[u.key]; return { user:u, source:m.source || 'register', mode:m.mode, weekOff:+m.weekOff, holId:m.holId, days:m.days }; });
+}
+function previewCells(u, m){
+  const md = S.model; const out = {};
+  const L = S.master.holidayLists.find(x=>x.id===m.holId); const hol = {};
+  if (L && m.mode !== 'full') L.items.forEach(i=>hol[i.key]=1);
+  md.gridDates.forEach(k => {
+    let c = 'P';
+    if (m.mode !== 'full') { if (+m.weekOff >= 0 && A.dowOf(k) === +m.weekOff) c = 'WO'; if (hol[k]) c = 'H'; if (m.days[k]) c = m.days[k]; }
+    out[k] = c;
+  });
+  return out;
+}
+function renderManual(){
+  const box = $('#muBody'); if (!S.model) return;
+  const users = S.master.manualUsers || [];
+  if (!S.master.hasManualSheet) { box.innerHTML = '<div class="notice n-info">No <b>Manual User</b> sheet found in the master file. To enter attendance by hand, add a sheet named <b>Manual User</b> with columns: Name, Employee Code, Company, Phone (optional: State, Designation, Reporting Head).</div>'; return; }
+  if (!users.length) { box.innerHTML = '<div class="hint">The Manual User sheet is empty.</div>'; return; }
+  const md = S.model;
+  const pend = users.filter(u => mState(u).status === 'pending').length;
+  const missingSrc = users.filter(u => S.manual[u.key].status === 'include' && !S.manual[u.key].source).length;
+  let h = '';
+  if (pend) h += '<div class="notice n-warn"><b>' + pend + ' manual user(s) pending.</b> Click Skip or Include for each. Pending users are not added to the report.</div>';
+  if (missingSrc) h += '<div class="notice n-err"><b>Select the attendance source</b> for ' + missingSrc + ' included user(s). It is written in Remarks.</div>';
+  users.forEach(u => {
+    const m = S.manual[u.key];
+    const inc = m.status === 'include';
+    h += '<div class="mu ' + (inc ? 'inc' : m.status === 'skip' ? 'skp' : '') + '" data-k="' + esc(u.key) + '">' +
+      '<div class="mu-h"><div class="who"><b>' + esc(u.name) + '</b><div class="hint mono">' + esc(u.code || 'No code') + ' · ' + esc(u.company || '—') + (u.phone ? ' · ' + esc(u.phone) : '') + (u.state ? ' · ' + esc(u.state) : '') + '</div></div>' +
+      (m.status === 'pending' ? '<span class="badge b-amb">Pending</span>' : inc ? '<span class="badge b-blu">Included</span>' : '<span class="badge b-gry">Skipped</span>') +
+      '<div class="seg"><button data-act="skip" class="' + (m.status === 'skip' ? 'on' : '') + '">Skip</button><button data-act="include" class="' + (inc ? 'on' : '') + '">Include</button></div></div>';
+    if (inc) {
+      const cells = previewCells(u, m);
+      const cnt = {}; Object.values(cells).forEach(c => cnt[c] = (cnt[c]||0)+1);
+      const eg = cnt.EG || 0, egN = +$('#sEG').value, leavePaid = $('#sLeave').value === '1';
+      const pay = md.gridDates.length - (cnt.AB||0) - (cnt.HD||0)*0.5 - (leavePaid?0:(cnt.L||0)) - (egN?Math.floor(eg/egN):0);
+      h += '<div class="mu-b"><div class="row3">' +
+        '<div><label class="f">Attendance source *</label><select data-f="source"><option value="">— Select source —</option><option value="register"' + (m.source==='register'?' selected':'') + '>Register manual entries</option><option value="biometric"' + (m.source==='biometric'?' selected':'') + '>Biometric attendance detail</option></select></div>' +
+        '<div><label class="f">Attendance type</label><select data-f="mode"><option value="full"' + (m.mode==='full'?' selected':'') + '>Full attendance — all ' + md.dim + ' days present</option><option value="custom"' + (m.mode==='custom'?' selected':'') + '>Custom — mark days</option></select></div>' +
+        (m.mode === 'custom' ? '<div><label class="f">Weekly off</label><select data-f="weekOff">' + WD.map((d,i)=>'<option value="'+i+'"'+(+m.weekOff===i?' selected':'')+'>'+d+(i===0?' (default)':'')+'</option>').join('') + '<option value="-1"' + (+m.weekOff===-1?' selected':'') + '>No weekly off</option></select></div>' : '<div></div>') +
+        '</div>';
+      if (m.mode === 'full') {
+        h += '<div class="full-note">Every day is <b>Present</b> — no week off, holiday, leave, half day or early going. ' + md.gridDates.length + ' days in the sheet' + (md.dim > md.cutoff ? ' + ' + (md.dim - md.cutoff) + ' assumed' : '') + ' = <b>' + md.dim + ' payable days</b>.</div>';
+      } else {
+        const paint = S.paint[u.key] || 'AB';
+        h += '<div class="row3"><div><label class="f">Holiday list</label><select data-f="holId"><option value="">— No holidays —</option>' + S.master.holidayLists.map(l=>'<option value="'+esc(l.id)+'"'+(l.id===m.holId?' selected':'')+'>'+esc(l.label)+'</option>').join('') + '</select></div>' +
+          '<div style="grid-column:span 2"><label class="f">Pick a code, then click the dates</label><div class="pal">' + MCODES.map(c=>{const s=A.codeStyle(c);return '<button data-paint="'+c+'" class="'+(c===paint?'on':'')+'" style="background:'+hex(s.bg)+';color:'+hex(s.fg)+'" title="'+MNAMES[c]+'">'+c+'</button>';}).join('') + '<button class="btn sec" data-act="reset" style="font-family:Inter">Reset days</button></div></div></div>';
+        const first = A.dowOf(md.gridDates[0]);
+        h += '<div class="cal">' + WD.map(d=>'<div class="dh">'+d.slice(0,3)+'</div>').join('') + '<div></div>'.repeat(first) +
+          md.gridDates.map(k => { const c = cells[k]; const s = A.codeStyle(c); return '<div class="d" data-day="'+k+'" style="background:'+hex(s.bg)+';color:'+hex(s.fg)+'"><small>'+A.fmtKey(k).slice(0,5)+'</small><b>'+c+'</b></div>'; }).join('') + '</div>';
+      }
+      h += '<div class="sum">' + ['P','WO','H','L','HD','EG','AB'].map(c=>'<span>'+MNAMES[c]+': <b>'+(cnt[c]||0)+'</b></span>').join('') + '<span>Payable (sheet days): <b>' + n(pay) + '</b></span>' + (md.dim > md.cutoff ? '<span>+ Assumed: <b>' + (md.dim - md.cutoff) + '</b></span>' : '') + '<span>Final: <b style="color:#047857">' + n(pay + md.dim - md.cutoff) + '</b></span></div></div>';
+    }
+    h += '</div>';
+  });
+  box.innerHTML = h;
+}
+$('#muBody').addEventListener('click', e => {
+  const card = e.target.closest('.mu'); if (!card) return;
+  const k = card.dataset.k; const m = S.manual[k];
+  const act = e.target.closest('[data-act]'); const pb = e.target.closest('[data-paint]'); const day = e.target.closest('[data-day]');
+  if (act) {
+    const a = act.dataset.act;
+    if (a === 'skip' || a === 'include') m.status = a;
+    if (a === 'reset') m.days = {};
+  } else if (pb) { S.paint[k] = pb.dataset.paint; renderManual(); return; }
+  else if (day) {
+    const code = S.paint[k] || 'AB'; const d = day.dataset.day;
+    const u = S.master.manualUsers.find(x=>x.key===k);
+    const base = previewCells(u, Object.assign({}, m, { days:{} }))[d];
+    if (m.days[d] === code || (!m.days[d] && base === code)) delete m.days[d]; else m.days[d] = code;
+    if (m.days[d] === base) delete m.days[d];
+  } else return;
+  saveManual(); run();
+});
+$('#muBody').addEventListener('change', e => {
+  const sel = e.target.closest('select[data-f]'); if (!sel) return;
+  const k = sel.closest('.mu').dataset.k; S.manual[k][sel.dataset.f] = sel.value; saveManual(); run();
+});
+
 /* ---- export ---- */
 $('#exportBtn').addEventListener('click', async () => {
-  const btn = $('#exportBtn'); btn.disabled = true;
+  const btn = $('#exportBtn');
+  const ms = (S.master.manualUsers||[]).filter(x => S.manual[x.key] && S.manual[x.key].status==='include' && !S.manual[x.key].source);
+  if (ms.length) { toast('Select the attendance source for: ' + ms.map(x=>x.name).join(', ')); document.querySelector('#muBody').scrollIntoView({behavior:'smooth'}); return; }
+  btn.disabled = true;
   try {
     if (typeof ExcelJS === 'undefined') throw new Error('Excel writer could not load. Check internet connection and reload.');
     const md = S.model;
