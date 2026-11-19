@@ -233,6 +233,17 @@ footer{text-align:center;color:#94a3b8;font-size:12px;padding:10px 0 30px}
   }
 
   // book = [{name, rows:[[...]]}] (from SheetJS sheet_to_json header:1). r is 1-based.
+  // ['2026-10-16','2026-10-17','2026-10-19'] -> "16-10 to 17-10, 19-10"
+  function rangeText(keys) {
+    const ks = keys.slice().sort(); const out = []; let a = ks[0], b = ks[0];
+    const next = k => { const d = new Date(Date.UTC(+k.slice(0, 4), +k.slice(5, 7) - 1, +k.slice(8) + 1)); return keyOf(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate()); };
+    for (let i = 1; i <= ks.length; i++) {
+      if (i < ks.length && ks[i] === next(b)) { b = ks[i]; continue; }
+      out.push(a === b ? a.slice(8) + '-' + a.slice(5, 7) : a.slice(8) + '-' + a.slice(5, 7) + ' to ' + b.slice(8) + '-' + b.slice(5, 7));
+      a = b = ks[i];
+    }
+    return out.join(', ');
+  }
   function rowVals(ws, r) { return (ws.rows[r - 1] || []).slice(); }
   function toBook(XLSX, buf) {
     const wb = XLSX.read(buf, { type: 'array', cellDates: false });
@@ -567,7 +578,9 @@ footer{text-align:center;color:#94a3b8;font-size:12px;padding:10px 0 30px}
       return w || null;
     };
     const manualEntries = (opts.manualEntries || []);
-    const manualCodes = new Set(manualEntries.map(m => (m.user.code || '').toUpperCase()).filter(Boolean));
+    const manualCodes = new Set(manualEntries.filter(m => m.mode !== 'mix').map(m => (m.user.code || '').toUpperCase()).filter(Boolean));
+    const mixBy = {};
+    manualEntries.filter(m => m.mode === 'mix' && m.user.code).forEach(m => { mixBy[m.user.code.toUpperCase()] = m; });
     breeze.emps.forEach(e => {
       if (opts.hideTest && isTestId(e)) return;
       if (manualCodes.has(e.code.toUpperCase())) return;
@@ -580,6 +593,8 @@ footer{text-align:center;color:#94a3b8;font-size:12px;padding:10px 0 30px}
       const wo = woFor(e.code, ns.name);
       const woDays = wo ? wo.days : [];
       let woApplied = 0;
+      const mix = mixBy[e.code.toUpperCase()];
+      const baseCells = {}; const manualDays = [];
       const dol = (m && m.dol) || ns.dol;
       const doj = m && m.doj ? m.doj : null;
       const cells = {}; const counts = { WO: 0, H: 0, P: 0, P4: 0, L: 0, HD: 0, EG: 0, AB: 0, OTHER: 0, NA: 0, P3: 0, P5: 0, BLANK: 0 };
@@ -592,6 +607,8 @@ footer{text-align:center;color:#94a3b8;font-size:12px;padding:10px 0 30px}
           if (woDays.length && woDays.includes(dowOf(k)) && !c.includes('P4') && c !== 'WO') { c = 'WO'; woApplied++; }
           if (hol[k]) { if (c !== 'H') holApplied++; c = 'H'; }
         }
+        baseCells[k] = c;
+        if (mix && mix.days && mix.days[k] && c !== '-') { c = mix.days[k]; manualDays.push(k); }
         cells[k] = c;
         const t = classify(c);
         counts[t]++;
@@ -631,6 +648,10 @@ footer{text-align:center;color:#94a3b8;font-size:12px;padding:10px 0 30px}
         prevSeen++;
         prevAdj += dayValue(classify(c), opts.leavePaid) - 1;
       });
+      if (mix) {
+        const src = mix.source === 'biometric' ? 'Biometric Attendance Detail' : 'Register Manual Entries';
+        remarks.push(manualDays.length ? 'Breeze + ' + src + ' for ' + manualDays.length + ' day(s): ' + rangeText(manualDays) : 'Manual user — no manual days entered, Breeze only');
+      }
       if (wo) {
         const dn = woDays.map(d => DAYS[d]).join(' & ');
         if (!woDays.length) remarks.push('Week off "' + wo.text + '" — no fixed day, Breeze codes kept');
@@ -648,12 +669,12 @@ footer{text-align:center;color:#94a3b8;font-size:12px;padding:10px 0 30px}
         state: e.state, code: e.code, name: ns.name, head: e.head.replace(/\s+/g, ' ').trim(), desig: e.desig,
         company: m ? m.company : '', doj, dol, status: inactive ? 'Inactive' : (e.status || 'Active'),
         location: locState, cells, counts, total, grand, hdDed, lDed, egDed, p3Ded, payable, assumed, prevAdj, prevSeen, final,
-        remarks: remarks.join('; '), holApplied, woApplied, weekOff: wo ? (woDays.length ? woDays.map(d => DAYS[d]).join(' & ') : wo.text) : '', matched: !!m
+        remarks: remarks.join('; '), holApplied, woApplied, baseCells, manualDays, manual: mix ? (mix.source || 'register') : undefined, weekOff: wo ? (woDays.length ? woDays.map(d => DAYS[d]).join(' & ') : wo.text) : '', matched: !!m
       });
     });
     // ---- manually entered employees ----
     const breezeCodes = new Set(breeze.emps.map(e => e.code.toUpperCase()));
-    manualEntries.forEach(me => {
+    manualEntries.filter(me => me.mode !== 'mix').forEach(me => {
       const u = me.user;
       const hol = {};
       if (me.mode !== 'full' && me.holId && lists[me.holId]) lists[me.holId].items.forEach(it => { hol[it.key] = it.name; });
@@ -681,7 +702,7 @@ footer{text-align:center;color:#94a3b8;font-size:12px;padding:10px 0 30px}
         state: (u.state || '').toUpperCase(), code: u.code || '', name: u.name, head: u.head || '', desig: u.desig || '',
         company: u.company || '', doj: null, dol: null, status: 'Active', location: canonState(u.state),
         cells, counts, total, grand: gridDates.length, hdDed, lDed, egDed, p3Ded: 0, payable, assumed, prevAdj: 0, prevSeen: 0,
-        final: payable + assumed, remarks: remarks.join('; '), holApplied: 0, matched: true, manual: me.source || 'register'
+        final: payable + assumed, remarks: remarks.join('; '), holApplied: 0, matched: true, manual: me.source || 'register', manualDays: gridDates.slice(), baseCells: {}
       });
     });
     const bcodes = new Set(breeze.emps.map(e => e.code.toUpperCase()));
@@ -839,6 +860,10 @@ footer{text-align:center;color:#94a3b8;font-size:12px;padding:10px 0 30px}
         const cs = codeStyle(v);
         c.fill = fill(cs.bg); c.font = { size: 9, bold: true, color: { argb: cs.fg } };
         c.alignment = { horizontal: 'center', vertical: 'middle' }; c.border = box;
+        if (r.manualDays && r.manualDays.includes(k) && !(r.manualDays.length === nD && !r.baseCells[k])) {
+          const bl = { style: 'medium', color: { argb: 'FF2563EB' } };
+          c.border = { top: bl, left: bl, bottom: bl, right: bl };
+        }
       });
       const rng = dL + rr + ':' + dLast + rr;
       const has = t => 'ISNUMBER(SEARCH("' + t + '",' + rng + '))';
@@ -948,13 +973,15 @@ footer{text-align:center;color:#94a3b8;font-size:12px;padding:10px 0 30px}
       ['P', 'Present', 'P'], ['AB', 'Absent', 'AB'], ['WO', 'Weekly Off', 'WO'], ['H', 'Holiday (from location holiday list)', 'H'],
       ['L', 'Leave', 'L'], ['HD', 'Half Day', 'HD'], ['EG', 'Early Going', 'EG'], ['P3', 'Present, No Logout', 'P3'],
       ['P5', 'Present, No First Call', 'P5'], ['P4', 'Worked on Week-Off day', 'P4'], ['Any combination', 'e.g. P3EG, EGP3, HDP3, P3HD, P5P3, P4P3, HDEG — the day is counted once by priority AB > HD > EG > L > P4 > WO > H > P. P3 and P5 inside any code are also counted as flags.', 'P5P3'],
-      ['-', 'Before date of joining or after date of leaving — not counted', '-']
+      ['-', 'Before date of joining or after date of leaving — not counted', '-'],
+      ['Blue border', 'Day entered manually (Register / Biometric) for an employee who also has Breeze attendance', 'P']
     ];
     legend.forEach((lg, i) => {
       const row = r + 1 + i;
       const cc = ws.getCell(row, 2); cc.value = lg[0];
       const cs = codeStyle(lg[2]); cc.fill = fill(cs.bg); cc.font = { bold: true, size: 10, color: { argb: cs.fg } };
       cc.alignment = { horizontal: 'center' }; cc.border = box;
+      if (lg[0] === 'Blue border') { const bl = { style: 'medium', color: { argb: 'FF2563EB' } }; cc.border = { top: bl, left: bl, bottom: bl, right: bl }; }
       ws.mergeCells(row, 3, row, 14);
       const cd = ws.getCell(row, 3); cd.value = lg[1]; cd.font = { size: 10, color: { argb: C.ink } };
     });
@@ -970,7 +997,7 @@ footer{text-align:center;color:#94a3b8;font-size:12px;padding:10px 0 30px}
       ['5. Payable Days as per Breeze', '= TOTAL − Absent − Half Day Deduction − Leave Deduction − Early Going Deduction − Auto Logout Deduction.   A day with HD in any code (HD, P3HD, P4HD…) is present but paid 0.5. A day with EG in any code (EG, P3EG, P4EG…) is present, and every ' + model.opts.egN + ' EG days cut 1 day' + (model.opts.egN ? '' : ' (rule off)') + '. Absent counts 0' + (model.opts.leavePaid ? '.' : '; Leave is deducted.')],
       ['6. Assumed days', model.cutoff < model.dim ? 'Attendance is taken till ' + pad(model.cutoff) + '/' + pad(model.month) + '. Days ' + asLbl + ' (' + (model.dim - model.cutoff) + ' days) are added as payable in advance. For an employee who left, only days up to the leaving date are added.' : 'Full month attendance is used, so no days are assumed.'],
       ['7. Previous month status', model.prevDates.length ? 'Previous month days ' + prevLbl + ' were paid in advance last month. Their actual status from Breeze is checked now: Absent = −1, Half Day = −0.5' + (model.opts.leavePaid ? '' : ', Leave = −1') + ', others = 0. That total is in this column.' : 'Enter the adjustment for the previous month\'s advance days here (no previous month data was uploaded). Absent = −1, Half Day = −0.5.'],
-      ['Manual entries', 'Employees from the "Manual User" sheet are entered in the tool (light blue Emp Code and Name). Remarks show the source: "Based on Register Manual Entries" or "Based on Biometric Attendance Detail". "Full attendance" means every day is Present (no week off, holiday, leave, half day or early going).'],
+      ['Manual entries', 'Employees from the "Manual User" sheet are entered in the tool (light blue Emp Code and Name). If the employee is also in Breeze, Breeze days are kept and only the manually entered days (blue border) are replaced. Remarks show the source: "Based on Register Manual Entries" or "Based on Biometric Attendance Detail". "Full attendance" means every day is Present (no week off, holiday, leave, half day or early going).'],
       ['8. Final Payable Days', '= Payable Days as per Breeze + Other Adjustment + MELA-EDF + Previous Month Status + Assumed days.   Yellow columns are for manual entry.']
     ];
     ex.forEach((e, i) => {
@@ -1240,32 +1267,40 @@ function renderNotes(){
 const MCODES = ['P','AB','L','WO','HD','EG','H'];
 const MNAMES = {P:'Present',AB:'Absent',L:'Leave',WO:'Week Off',HD:'Half Day',EG:'Early Going',H:'Holiday'};
 const WD = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-S.manual = {}; S.paint = {};
+S.manual = {}; S.paint = {}; S.range = {};
 function msKey(){ return 'attb-manual-' + ($('#sMonth').value || ''); }
 function saveManual(){ try { localStorage.setItem(msKey(), JSON.stringify(S.manual)); } catch(e) {} }
 function loadManual(){ try { const v = localStorage.getItem(msKey()); S.manual = v ? JSON.parse(v) : {}; } catch(e) { S.manual = {}; } }
-function mState(u){
-  if (!S.manual[u.key]) S.manual[u.key] = { status:'pending', source:'', mode:'full', weekOff: woDefault(u), holId: A.guessHolidayList(u.state || '', S.master.holidayLists), days:{} };
-  return S.manual[u.key];
-}
+const normCode = c => String(c||'').toUpperCase().replace(/\s+/g,'');
+function breezeEmp(u){ return u.code ? S.breeze.emps.find(e => normCode(e.code) === normCode(u.code)) : null; }
 function woDefault(u){
-  const w = (S.master.weekOffs||[]).find(x => u.code && x.code === u.code.toUpperCase().replace(/\s+/g,''));
+  const w = (S.master.weekOffs||[]).find(x => u.code && x.code === normCode(u.code));
   return w && w.days.length === 1 ? w.days[0] : 0;
+}
+function mState(u){
+  if (!S.manual[u.key]) S.manual[u.key] = { status:'pending', source:'', mode: breezeEmp(u) ? 'mix' : 'full', weekOff: woDefault(u), holId: A.guessHolidayList(u.state || '', S.master.holidayLists), days:{} };
+  const m = S.manual[u.key];
+  if (m.mode === 'mix' && !breezeEmp(u)) m.mode = 'custom';
+  return m;
 }
 function manualEntries(){
   if (!S.master || !S.master.manualUsers) return [];
   return S.master.manualUsers.filter(u => S.manual[u.key] && S.manual[u.key].status === 'include')
     .map(u => { const m = S.manual[u.key]; return { user:u, source:m.source || 'register', mode:m.mode, weekOff:+m.weekOff, holId:m.holId, days:m.days }; });
 }
-function previewCells(u, m){
-  const md = S.model; const out = {};
-  const L = S.master.holidayLists.find(x=>x.id===m.holId); const hol = {};
+function modelRow(u){ return S.model.rows.find(r => r.manual && normCode(r.code) === normCode(u.code) && (u.code || r.name === u.name)); }
+// cells without manual edits (base) and with them
+function baseCells(u, m){
+  const md = S.model;
+  if (m.mode === 'mix') { const r = modelRow(u); return r ? r.baseCells : {}; }
+  const out = {}; const L = S.master.holidayLists.find(x=>x.id===m.holId); const hol = {};
   if (L && m.mode !== 'full') L.items.forEach(i=>hol[i.key]=1);
-  md.gridDates.forEach(k => {
-    let c = 'P';
-    if (m.mode !== 'full') { if (+m.weekOff >= 0 && A.dowOf(k) === +m.weekOff) c = 'WO'; if (hol[k]) c = 'H'; if (m.days[k]) c = m.days[k]; }
-    out[k] = c;
-  });
+  md.gridDates.forEach(k => { let c = 'P'; if (m.mode !== 'full') { if (+m.weekOff >= 0 && A.dowOf(k) === +m.weekOff) c = 'WO'; if (hol[k]) c = 'H'; } out[k] = c; });
+  return out;
+}
+function previewCells(u, m){
+  const base = baseCells(u, m); const out = {};
+  S.model.gridDates.forEach(k => { out[k] = (m.mode !== 'full' && m.days[k] && base[k] !== '-') ? m.days[k] : base[k]; });
   return out;
 }
 function renderManual(){
@@ -1279,34 +1314,46 @@ function renderManual(){
   let h = '';
   if (pend) h += '<div class="notice n-warn"><b>' + pend + ' manual user(s) pending.</b> Click Skip or Include for each. Pending users are not added to the report.</div>';
   if (missingSrc) h += '<div class="notice n-err"><b>Select the attendance source</b> for ' + missingSrc + ' included user(s). It is written in Remarks.</div>';
+  const dateOpts = sel => md.gridDates.map(k=>'<option value="'+k+'"'+(k===sel?' selected':'')+'>'+A.fmtKey(k)+' ('+WD[A.dowOf(k)].slice(0,3)+')</option>').join('');
   users.forEach(u => {
     const m = S.manual[u.key];
     const inc = m.status === 'include';
+    const be = breezeEmp(u);
     h += '<div class="mu ' + (inc ? 'inc' : m.status === 'skip' ? 'skp' : '') + '" data-k="' + esc(u.key) + '">' +
-      '<div class="mu-h"><div class="who"><b>' + esc(u.name) + '</b><div class="hint mono">' + esc(u.code || 'No code') + ' · ' + esc(u.company || '—') + (u.phone ? ' · ' + esc(u.phone) : '') + (u.state ? ' · ' + esc(u.state) : '') + '</div></div>' +
+      '<div class="mu-h"><div class="who"><b>' + esc(u.name) + '</b>' + (be ? ' <span class="badge b-grn">Also in Breeze</span>' : '') + '<div class="hint mono">' + esc(u.code || 'No code') + ' · ' + esc(u.company || '—') + (u.phone ? ' · ' + esc(u.phone) : '') + (u.state ? ' · ' + esc(u.state) : '') + '</div></div>' +
       (m.status === 'pending' ? '<span class="badge b-amb">Pending</span>' : inc ? '<span class="badge b-blu">Included</span>' : '<span class="badge b-gry">Skipped</span>') +
       '<div class="seg"><button data-act="skip" class="' + (m.status === 'skip' ? 'on' : '') + '">Skip</button><button data-act="include" class="' + (inc ? 'on' : '') + '">Include</button></div></div>';
     if (inc) {
-      const cells = previewCells(u, m);
-      const cnt = {}; Object.values(cells).forEach(c => cnt[c] = (cnt[c]||0)+1);
-      const eg = cnt.EG || 0, egN = +$('#sEG').value, leavePaid = $('#sLeave').value === '1';
-      const pay = md.gridDates.length - (cnt.AB||0) - (cnt.HD||0)*0.5 - (leavePaid?0:(cnt.L||0)) - (egN?Math.floor(eg/egN):0);
+      const base = baseCells(u, m), cells = previewCells(u, m);
+      const nMan = Object.keys(m.days).filter(k => base[k] !== undefined && base[k] !== '-' && m.days[k] !== base[k]).length;
       h += '<div class="mu-b"><div class="row3">' +
         '<div><label class="f">Attendance source *</label><select data-f="source"><option value="">— Select source —</option><option value="register"' + (m.source==='register'?' selected':'') + '>Register manual entries</option><option value="biometric"' + (m.source==='biometric'?' selected':'') + '>Biometric attendance detail</option></select></div>' +
-        '<div><label class="f">Attendance type</label><select data-f="mode"><option value="full"' + (m.mode==='full'?' selected':'') + '>Full attendance — all ' + md.dim + ' days present</option><option value="custom"' + (m.mode==='custom'?' selected':'') + '>Custom — mark days</option></select></div>' +
-        (m.mode === 'custom' ? '<div><label class="f">Weekly off</label><select data-f="weekOff">' + WD.map((d,i)=>'<option value="'+i+'"'+(+m.weekOff===i?' selected':'')+'>'+d+(i===0?' (default)':'')+'</option>').join('') + '<option value="-1"' + (+m.weekOff===-1?' selected':'') + '>No weekly off</option></select></div>' : '<div></div>') +
+        '<div><label class="f">Attendance type</label><select data-f="mode">' +
+          (be ? '<option value="mix"' + (m.mode==='mix'?' selected':'') + '>Breeze + manual days (fill only missing days)</option>' : '') +
+          '<option value="full"' + (m.mode==='full'?' selected':'') + '>Full attendance — all ' + md.dim + ' days present</option>' +
+          '<option value="custom"' + (m.mode==='custom'?' selected':'') + '>' + (be ? 'Manual only — ignore Breeze' : 'Custom — mark days') + '</option></select></div>' +
+        (m.mode === 'custom' ? '<div><label class="f">Weekly off</label><select data-f="weekOff">' + WD.map((d,i)=>'<option value="'+i+'"'+(+m.weekOff===i?' selected':'')+'>'+d+(i===0?' (default)':'')+'</option>').join('') + '<option value="-1"' + (+m.weekOff===-1?' selected':'') + '>No weekly off</option></select></div>'
+          : m.mode === 'mix' ? '<div><label class="f">Week off & holidays</label><div class="hint" style="margin-top:8px">Taken from Breeze, Week Off Master and the location holiday list.</div></div>' : '<div></div>') +
         '</div>';
       if (m.mode === 'full') {
-        h += '<div class="full-note">Every day is <b>Present</b> — no week off, holiday, leave, half day or early going. ' + md.gridDates.length + ' days in the sheet' + (md.dim > md.cutoff ? ' + ' + (md.dim - md.cutoff) + ' assumed' : '') + ' = <b>' + md.dim + ' payable days</b>.</div>';
+        h += '<div class="full-note">Every day is <b>Present</b> — no week off, holiday, leave, half day or early going. ' + md.gridDates.length + ' days in the sheet' + (md.dim > md.cutoff ? ' + ' + (md.dim - md.cutoff) + ' assumed' : '') + ' = <b>' + md.dim + ' payable days</b>.' + (be ? ' Breeze attendance of this employee is not used.' : '') + '</div>';
       } else {
-        const paint = S.paint[u.key] || 'AB';
-        h += '<div class="row3"><div><label class="f">Holiday list</label><select data-f="holId"><option value="">— No holidays —</option>' + S.master.holidayLists.map(l=>'<option value="'+esc(l.id)+'"'+(l.id===m.holId?' selected':'')+'>'+esc(l.label)+'</option>').join('') + '</select></div>' +
-          '<div style="grid-column:span 2"><label class="f">Pick a code, then click the dates</label><div class="pal">' + MCODES.map(c=>{const s=A.codeStyle(c);return '<button data-paint="'+c+'" class="'+(c===paint?'on':'')+'" style="background:'+hex(s.bg)+';color:'+hex(s.fg)+'" title="'+MNAMES[c]+'">'+c+'</button>';}).join('') + '<button class="btn sec" data-act="reset" style="font-family:Inter">Reset days</button></div></div></div>';
+        const paint = S.paint[u.key] || 'P';
+        const rg = S.range[u.key] || { from: md.gridDates[Math.min(15, md.gridDates.length-1)], to: md.gridDates[md.gridDates.length-1], code: 'P' };
+        if (m.mode === 'mix') h += '<div class="notice n-info" style="margin:0">Breeze days are shown as they are. Mark only the days taken from the ' + (m.source==='biometric'?'biometric detail':'register') + ' — they get a blue border here and in Excel. Click a marked day again with the same code to go back to the Breeze value.</div>';
+        h += '<div class="row3">' + (m.mode === 'custom' ? '<div><label class="f">Holiday list</label><select data-f="holId"><option value="">— No holidays —</option>' + S.master.holidayLists.map(l=>'<option value="'+esc(l.id)+'"'+(l.id===m.holId?' selected':'')+'>'+esc(l.label)+'</option>').join('') + '</select></div>' : '') +
+          '<div style="grid-column:span ' + (m.mode === 'custom' ? 2 : 3) + '"><label class="f">Pick a code, then click the dates</label><div class="pal">' + MCODES.map(c=>{const s=A.codeStyle(c);return '<button data-paint="'+c+'" class="'+(c===paint?'on':'')+'" style="background:'+hex(s.bg)+';color:'+hex(s.fg)+'" title="'+MNAMES[c]+'">'+c+'</button>';}).join('') + '<button class="btn sec" data-act="reset" style="font-family:Inter">Clear manual days</button></div></div></div>';
+        h += '<div class="bar" style="margin:0;gap:8px"><span class="f" style="margin:0">Fill a date range:</span><select data-r="from" style="width:auto">' + dateOpts(rg.from) + '</select><span class="hint">to</span><select data-r="to" style="width:auto">' + dateOpts(rg.to) + '</select><select data-r="code" style="width:auto">' + MCODES.map(c=>'<option value="'+c+'"'+(c===rg.code?' selected':'')+'>'+c+' — '+MNAMES[c]+'</option>').join('') + '</select><label class="tg" style="font-size:12px"><input type="checkbox" data-r="keepwo"' + (rg.keepwo!==false?' checked':'') + '> Keep WO / H days</label><button class="btn sec" data-act="range">Apply</button></div>';
         const first = A.dowOf(md.gridDates[0]);
         h += '<div class="cal">' + WD.map(d=>'<div class="dh">'+d.slice(0,3)+'</div>').join('') + '<div></div>'.repeat(first) +
-          md.gridDates.map(k => { const c = cells[k]; const s = A.codeStyle(c); return '<div class="d" data-day="'+k+'" style="background:'+hex(s.bg)+';color:'+hex(s.fg)+'"><small>'+A.fmtKey(k).slice(0,5)+'</small><b>'+c+'</b></div>'; }).join('') + '</div>';
+          md.gridDates.map(k => { const c = cells[k] || ''; const s = A.codeStyle(c); const man = m.days[k] && base[k] !== '-' && m.days[k] !== base[k];
+            return '<div class="d" data-day="'+k+'" style="background:'+hex(s.bg)+';color:'+hex(s.fg)+(man?';outline:2.5px solid #2563eb;outline-offset:-2px':'')+'" title="'+(man?'Manual — Breeze/base: '+esc(base[k]||'blank'):'')+'"><small>'+A.fmtKey(k).slice(0,5)+'</small><b>'+esc(c||'—')+'</b></div>'; }).join('') + '</div>';
       }
-      h += '<div class="sum">' + ['P','WO','H','L','HD','EG','AB'].map(c=>'<span>'+MNAMES[c]+': <b>'+(cnt[c]||0)+'</b></span>').join('') + '<span>Payable (sheet days): <b>' + n(pay) + '</b></span>' + (md.dim > md.cutoff ? '<span>+ Assumed: <b>' + (md.dim - md.cutoff) + '</b></span>' : '') + '<span>Final: <b style="color:#047857">' + n(pay + md.dim - md.cutoff) + '</b></span></div></div>';
+      const r = modelRow(u);
+      if (r) h += '<div class="sum">' + [['P','P'],['WO','WO'],['H','H'],['L','L'],['HD','HD'],['EG','EG'],['AB','AB']].map(([c])=>'<span>'+MNAMES[c]+': <b>'+(r.counts[c]||0)+'</b></span>').join('') +
+        (m.mode==='mix' ? '<span>Manual days: <b style="color:#2563eb">' + nMan + '</b></span>' : '') +
+        '<span>Payable: <b>' + n(r.payable) + '</b></span>' + (r.prevAdj ? '<span>Prev. month: <b>' + n(r.prevAdj) + '</b></span>' : '') + (r.assumed ? '<span>+ Assumed: <b>' + r.assumed + '</b></span>' : '') + '<span>Final: <b style="color:#047857">' + n(r.final) + '</b></span></div>';
+      h += '</div>';
     }
     h += '</div>';
   });
@@ -1315,24 +1362,37 @@ function renderManual(){
 $('#muBody').addEventListener('click', e => {
   const card = e.target.closest('.mu'); if (!card) return;
   const k = card.dataset.k; const m = S.manual[k];
+  const u = S.master.manualUsers.find(x=>x.key===k);
   const act = e.target.closest('[data-act]'); const pb = e.target.closest('[data-paint]'); const day = e.target.closest('[data-day]');
   if (act) {
     const a = act.dataset.act;
     if (a === 'skip' || a === 'include') m.status = a;
     if (a === 'reset') m.days = {};
+    if (a === 'range') {
+      const g = s => card.querySelector('[data-r="'+s+'"]');
+      const from = g('from').value, to = g('to').value, code = g('code').value, keep = g('keepwo').checked;
+      S.range[k] = { from, to, code, keepwo: keep };
+      const base = baseCells(u, m);
+      S.model.gridDates.forEach(d => {
+        if (d < from || d > to || base[d] === '-') return;
+        if (keep && (base[d] === 'WO' || base[d] === 'H' || /P4/.test(base[d] || ''))) return;
+        if (code === base[d]) delete m.days[d]; else m.days[d] = code;
+      });
+    }
   } else if (pb) { S.paint[k] = pb.dataset.paint; renderManual(); return; }
   else if (day) {
-    const code = S.paint[k] || 'AB'; const d = day.dataset.day;
-    const u = S.master.manualUsers.find(x=>x.key===k);
-    const base = previewCells(u, Object.assign({}, m, { days:{} }))[d];
-    if (m.days[d] === code || (!m.days[d] && base === code)) delete m.days[d]; else m.days[d] = code;
-    if (m.days[d] === base) delete m.days[d];
+    const code = S.paint[k] || 'P'; const d = day.dataset.day;
+    const base = baseCells(u, m)[d];
+    if (base === '-') { toast('This day is outside the joining / leaving dates.'); return; }
+    if (m.days[d] === code || code === base) delete m.days[d]; else m.days[d] = code;
   } else return;
   saveManual(); run();
 });
 $('#muBody').addEventListener('change', e => {
   const sel = e.target.closest('select[data-f]'); if (!sel) return;
-  const k = sel.closest('.mu').dataset.k; S.manual[k][sel.dataset.f] = sel.value; saveManual(); run();
+  const k = sel.closest('.mu').dataset.k; S.manual[k][sel.dataset.f] = sel.value;
+  if (sel.dataset.f === 'mode') S.manual[k].days = {};
+  saveManual(); run();
 });
 
 /* ---- export ---- */
