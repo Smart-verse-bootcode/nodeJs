@@ -204,6 +204,50 @@ tbody tr{transition:background .2s}
 .toast{display:flex;align-items:center;gap:10px;background:rgba(15,23,42,.92);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:12px 18px;transform:translate(-50%,0);opacity:1;transition:transform .35s cubic-bezier(.34,1.56,.64,1),opacity .3s}
 .toast.hidden{display:flex!important;transform:translate(-50%,30px);opacity:0;pointer-events:none}
 .toast::before{content:"";width:8px;height:8px;border-radius:50%;background:#34d399;box-shadow:0 0 0 4px rgba(52,211,153,.2)}
+/* mode banner */
+.mode{display:flex;align-items:center;gap:14px;border-radius:14px;padding:14px 16px;margin-bottom:16px;border:1px solid;flex-wrap:wrap}
+.mode .mi{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;flex:none}
+.mode b{font-family:Sora,Inter,sans-serif;font-size:14px;display:block}
+.mode span{font-size:12.5px}
+.mode.full{background:linear-gradient(135deg,#ecfdf5,#f0fdfa);border-color:#a7f3d0;color:#065f46}
+.mode.full .mi{background:#10b981;color:#fff;box-shadow:0 6px 16px -4px rgba(16,185,129,.5)}
+.mode.cut{background:linear-gradient(135deg,#fffbeb,#fff7ed);border-color:#fde68a;color:#78350f}
+.mode.cut .mi{background:#f59e0b;color:#fff;box-shadow:0 6px 16px -4px rgba(245,158,11,.5)}
+.mode .chips{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+.mode .chips i{font-style:normal;font-size:11px;font-weight:700;padding:4px 9px;border-radius:999px;background:rgba(255,255,255,.7);border:1px solid currentColor;opacity:.85}
+.drop.off{opacity:.55;filter:grayscale(.9);pointer-events:none;border-style:dashed;background:#f8fafc}
+.drop.off .tag{background:#e2e8f0;color:#64748b}
+/* ready modal */
+.modal{position:fixed;inset:0;z-index:60;display:grid;place-items:center;padding:20px;background:rgba(7,20,40,.55);backdrop-filter:blur(6px);transition:opacity .3s}
+.modal.hidden{display:grid!important;opacity:0;pointer-events:none}
+.mbox{position:relative;width:min(620px,100%);background:#fff;border-radius:22px;box-shadow:0 40px 80px -20px rgba(7,20,40,.55);overflow:hidden;transform:translateY(0) scale(1);transition:transform .45s cubic-bezier(.34,1.56,.64,1)}
+.modal.hidden .mbox{transform:translateY(24px) scale(.96)}
+.mtop{position:relative;padding:26px 28px 22px;color:#fff;background:linear-gradient(135deg,#0b1f3a,#123a6b 55%,#4c1d95);overflow:hidden}
+.mtop::after{content:"";position:absolute;right:-60px;top:-60px;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(56,189,248,.45),transparent 70%)}
+.mtop h3{margin:12px 0 4px;font:700 22px Sora,Inter,sans-serif;letter-spacing:-.01em}
+.mtop p{margin:0;color:#c7d2fe;font-size:13px}
+.mcheck{width:52px;height:52px;border-radius:16px;display:grid;place-items:center;background:rgba(16,185,129,.18);border:1px solid rgba(110,231,183,.5)}
+.mcheck path{stroke-dasharray:30;stroke-dashoffset:30;animation:draw .7s .25s ease forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+.mclose{position:absolute;top:14px;right:14px;z-index:2;width:34px;height:34px;border-radius:10px;border:0;background:rgba(255,255,255,.12);color:#fff;font-size:18px;cursor:pointer}
+.mclose:hover{background:rgba(255,255,255,.22)}
+.mbody{padding:22px 28px 26px}
+.mk{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.mk div{border:1px solid #e5eaf2;border-radius:14px;padding:12px 14px;background:linear-gradient(180deg,#fff,#f8fafc)}
+.mk small{display:block;font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#64748b}
+.mk b{font:800 22px Sora,Inter,sans-serif;color:#0f172a}
+.mk .g b{color:#047857}
+.mchk{list-style:none;margin:0 0 18px;padding:0;display:grid;gap:7px}
+.mchk li{display:flex;align-items:center;gap:10px;font-size:13px;padding:9px 12px;border-radius:10px;background:#f8fafc;border:1px solid #eef2f7}
+.mchk li i{font-style:normal;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:800;flex:none}
+.mchk li.ok i{background:#d1fae5;color:#047857}
+.mchk li.wn{background:#fffbeb;border-color:#fde68a}
+.mchk li.wn i{background:#f59e0b;color:#fff}
+.mchk li a{margin-left:auto;font-size:12px;font-weight:700;color:#1d4ed8;cursor:pointer;white-space:nowrap}
+.mact{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+.btn.ghost{background:#fff;border:1px solid #cbd5e1;color:#0f172a}
+.btn.ghost:hover{background:#f8fafc}
+@media(max-width:640px){.mk{grid-template-columns:1fr}}
 /* inline bold inside small text */
 .drop small b{display:inline;font-size:inherit;margin:0;color:#334155}
 @media(max-width:900px){.flow .node .st{font-size:13px}.stepper button span{display:none}}
@@ -218,7 +262,7 @@ tbody tr{transition:background .2s}
       <div class="logo"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M8 2v4M16 2v4M3 10h18M8 15l2.5 2.5L16 13"/></svg></div>
       <div><h1>Attendance Builder</h1><p>Breeze Attendance Summary Report → salary-ready Payroll Attendance Register</p></div>
     </div>
-    <div class="pills"><span id="ver">Version v2.4 · 19-11-2026</span><span><b>●</b> Runs in your browser</span><span>No data leaves this page</span><span>DD-MM-YYYY · IST</span></div>
+    <div class="pills"><span id="ver">Version v3.0 · 25-11-2026</span><span><b>●</b> Runs in your browser</span><span>No data leaves this page</span><span>DD-MM-YYYY · IST</span></div>
   </div>
   <div class="flowwrap">
     <svg class="flow" id="flow" viewBox="0 0 1018 150" aria-label="Builder flow">
@@ -252,9 +296,9 @@ tbody tr{transition:background .2s}
     <h2><span class="step">1</span>Upload files</h2>
     <p class="sub">Files are read inside your browser only. Nothing is uploaded to any server.</p>
     <div class="drops">
-      <label class="drop" id="dz-breeze"><div class="dico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 17h6"/></svg></div><span class="tag">REQUIRED</span><b>Breeze Attendance Summary Report</b><small>The .xlsx exported from Breeze App for the date range (e.g. 01-10 to 25-10).</small><div class="st"></div><input type="file" accept=".xlsx,.xls" data-k="breeze"></label>
+      <label class="drop" id="dz-breeze"><div class="dico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 17h6"/></svg></div><span class="tag">REQUIRED</span><b>Breeze Attendance Summary Report</b><small>The .xlsx exported from Breeze App for the <b>full month</b> (e.g. 01-10 to 31-10). A shorter range switches to cut-off mode.</small><div class="st"></div><input type="file" accept=".xlsx,.xls" data-k="breeze"></label>
       <label class="drop" id="dz-master"><div class="dico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v12c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12c0 1.7 3.1 3 7 3s7-1.3 7-3"/></svg></div><span class="tag">REQUIRED</span><b>Employee Master + Holiday Lists</b><small>Employee Master, holiday list per location, <b>Week Off Master</b> and <b>Manual User</b> sheets. State can be written as WB, West Bengal or WEST BENGAL.</small><div class="st"></div><input type="file" accept=".xlsx,.xls" data-k="master"></label>
-      <label class="drop" id="dz-prev"><div class="dico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 3-6.2M4 4v4h4"/><path d="M12 8v4l3 2"/></svg></div><span class="tag opt">OPTIONAL</span><b>Previous Month Breeze Report</b><small>Used to auto-calculate the previous month status for days that were paid in advance (e.g. 26-09 to 30-09).</small><div class="st"></div><input type="file" accept=".xlsx,.xls" data-k="prev"></label>
+      <label class="drop" id="dz-prev"><div class="dico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 3-6.2M4 4v4h4"/><path d="M12 8v4l3 2"/></svg></div><span class="tag opt">OPTIONAL</span><b>Previous Month Breeze Report</b><small id="prevNote">Only for cut-off mode: checks the previous month days that were paid in advance (e.g. 26-09 to 30-09).</small><div class="st"></div><input type="file" accept=".xlsx,.xls" data-k="prev"></label>
     </div>
     <div id="loadMsg" style="margin-top:14px"></div>
   </section>
@@ -263,6 +307,7 @@ tbody tr{transition:background .2s}
   <section class="card reveal" id="sec-settings">
     <h2><span class="step">2</span>Payroll settings</h2>
     <p class="sub">These rules are also written into the Excel file as editable yellow cells, so formulas can be changed later too.</p>
+    <div id="modeBanner"></div>
     <div class="grid4">
       <div><label class="f">Salary month</label><select id="sMonth"></select></div>
       <div><label class="f">Attendance cut-off</label><select id="sCut"></select><div class="hint" id="cutHint"></div></div>
@@ -307,16 +352,30 @@ tbody tr{transition:background .2s}
       <div class="seg" id="flt"><button data-f="all" class="on">All</button><button data-f="att">Needs attention</button><button data-f="inact">Inactive</button><button data-f="nm">Not in master</button><button data-f="man">Manual</button></div>
       <span style="flex:1"></span><span class="hint" id="cnt"></span>
     </div>
-    <div class="tbl"><table><thead><tr><th>Employee</th><th>Location / Company</th><th>Day codes</th><th class="num">Absent</th><th class="num">Payable</th><th class="num">Prev. Month</th><th class="num">Assumed</th><th class="num">Final</th><th>Remarks</th></tr></thead><tbody id="pBody"></tbody></table></div>
+    <div class="tbl"><table><thead><tr><th>Employee</th><th>Location / Company</th><th>Day codes</th><th class="num">Absent</th><th class="num">Payable</th><th class="num col-cut">Prev. Month</th><th class="num col-cut">Assumed</th><th class="num">Final</th><th>Remarks</th></tr></thead><tbody id="pBody"></tbody></table></div>
     <div class="exp" style="margin-top:18px">
       <div class="hint" style="max-width:640px">The Excel keeps your familiar salary sheet layout, with live formulas in every count column, colour-coded day codes, yellow input columns (Other Adjustment, MELA-EDF) and a full calculation explanation at the end of the sheet.</div>
       <button class="btn pri" id="exportBtn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 3v12m0 0l-5-5m5 5l5-5M4 21h16"/></svg>Download Excel</button>
     </div>
   </section>
   </div>
-  <footer>Attendance Builder · Version v2.4 · 19-11-2026 · dates shown as DD-MM-YYYY · times in IST</footer>
+  <footer>Attendance Builder · Version v3.0 · 25-11-2026 · dates shown as DD-MM-YYYY · times in IST</footer>
 </main>
 <div class="toast hidden" id="toast"></div>
+<div class="modal hidden" id="readyModal" role="dialog" aria-modal="true" aria-labelledby="rmTitle">
+  <div class="mbox">
+    <button class="mclose" id="rmClose" aria-label="Close">×</button>
+    <div class="mtop">
+      <div class="mcheck"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#6ee7b7" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+      <h3 id="rmTitle">Payroll is ready</h3><p id="rmSub"></p>
+    </div>
+    <div class="mbody">
+      <div class="mk" id="rmKpi"></div>
+      <ul class="mchk" id="rmChk"></ul>
+      <div class="mact"><button class="btn ghost" id="rmReview">Review first</button><button class="btn pri" id="rmDownload"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 3v12m0 0l-5-5m5 5l5-5M4 21h16"/></svg>Download Excel</button></div>
+    </div>
+  </div>
+</div>
 
 <script>
 /* Attendance Builder core — parsing, matching, calculation, Excel export.
@@ -738,8 +797,9 @@ tbody tr{transition:background .2s}
     const py = month === 1 ? year - 1 : year, pm = month === 1 ? 12 : month - 1;
     const pdim = daysInMonth(py, pm);
     const prevCut = Math.min(opts.cutoff || pdim, pdim);
+    const fullMonth = cutoff >= dim;
     const prevDates = [];
-    for (let d = prevCut + 1; d <= pdim; d++) prevDates.push(keyOf(py, pm, d));
+    if (!fullMonth) for (let d = prevCut + 1; d <= pdim; d++) prevDates.push(keyOf(py, pm, d));
     const prevDays = {}; // code -> {key: code}
     [breeze, opts.prevBreeze].filter(Boolean).forEach(b => b.emps.forEach(e => {
       prevDates.forEach(k => { if (e.days[k] !== undefined && e.days[k] !== '') (prevDays[e.code] = prevDays[e.code] || {})[k] = e.days[k]; });
@@ -890,7 +950,7 @@ tbody tr{transition:background .2s}
     });
     const bcodes = new Set(breeze.emps.map(e => e.code.toUpperCase()));
     const woSummary = { total: woList.length, notFound: woList.filter(w => !w.breezeCode), noDay: woList.filter(w => !w.days.length) };
-    return { woSummary, year, month, dim, cutoff, gridDates, prevDates: prevDates.filter(k => Object.values(prevDays).some(p => p[k] !== undefined)),
+    return { fullMonth, woSummary, year, month, dim, cutoff, gridDates, prevDates: prevDates.filter(k => Object.values(prevDays).some(p => p[k] !== undefined)),
       allPrevDates: prevDates, missingDates, rows, opts,
       ignoredAfterCutoff: breeze.dates.filter(k => k.slice(0, 7) === ym && +k.slice(8) > cutoff) };
   }
@@ -946,7 +1006,7 @@ tbody tr{transition:background .2s}
       { k: 'mela', h: 'MELA - EDF', g: 'PAYABLE', input: 1 }, { k: 'prevAdj', h: 'Previous Month ' + prevLbl + ' Status', g: 'PAYABLE', w: 12, input: 1 },
       { k: 'assumed', h: mName + ' ' + asLbl + ' (Assumed)', g: 'PAYABLE', w: 12 }, { k: 'final', h: 'Final Payable Days', g: 'PAYABLE', w: 11 },
       { k: 'remarks', h: 'Remarks', g: 'PAYABLE', w: 44 }
-    ];
+    ].filter(c => !(model.fullMonth && (c.k === 'prevAdj' || c.k === 'assumed')));
     const s0 = d0 + nD; // first summary col
     const SC = {}; SUM.forEach((s, i) => { SC[s.k] = s0 + i; });
     const lastCol = s0 + SUM.length - 1;
@@ -970,7 +1030,7 @@ tbody tr{transition:background .2s}
     ws.mergeCells(2, 1, 2, lastCol);
     const st = ws.getCell(2, 1);
     st.value = 'Attendance period: ' + fmtKey(model.gridDates[0]) + ' to ' + fmtKey(model.gridDates[nD - 1]) +
-      '     |     Source: Breeze Attendance Summary Report + Employee Master     |     Employees: ' + model.rows.length +
+      (model.fullMonth ? '  (Full month)' : '  (Cut-off ' + pad(cut) + ' — ' + (dim - cut) + ' days assumed)') + '     |     Source: Breeze Attendance Summary Report + Payroll Master     |     Employees: ' + model.rows.length +
       '     |     Generated on: ' + nowIST();
     st.font = { name: 'Calibri', size: 10, color: { argb: 'FFCBD5E1' } };
     st.fill = fill(C.navy2); st.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
@@ -1067,7 +1127,7 @@ tbody tr{transition:background .2s}
         egDed: ['IF(' + ref(R.eg) + '=0,0,INT(' + L('EG') + rr + '/' + ref(R.eg) + '))', r.egDed],
         p3Ded: ['IF(' + ref(R.p3) + '=0,0,INT(' + L('P3') + rr + '/' + ref(R.p3) + '))', r.p3Ded],
         payable: [L('total') + rr + '-' + L('AB') + rr + '-' + L('hdDed') + rr + '-' + L('lDed') + rr + '-' + L('egDed') + rr + '-' + L('p3Ded') + rr, r.payable],
-        final: ['N(' + L('payable') + rr + ')+N(' + L('other') + rr + ')+N(' + L('mela') + rr + ')+N(' + L('prevAdj') + rr + ')+N(' + L('assumed') + rr + ')', r.final]
+        final: [['payable', 'other', 'mela', 'prevAdj', 'assumed'].filter(k => SC[k]).map(k => 'N(' + L(k) + rr + ')').join('+'), r.final]
       };
       SUM.forEach(s => {
         const c = row.getCell(SC[s.k]);
@@ -1178,10 +1238,13 @@ tbody tr{transition:background .2s}
       ['3. Flags', 'No Logout (P3) and No First Call (P5) are counted wherever they appear, inside any combination (P3EG, HDP3, P5P3...). They do not change the day type; they only drive the Auto Logout Deduction rule.'],
       ['4. Deductions', 'Half Day Deduction = Half Day × 0.5.   Leave Deduction = Leave Taken if rule "Leave is paid" = No, else 0.   Early Going Deduction = INT(Early Going ÷ rule value).   Auto Logout Deduction = INT(No Logout ÷ rule value).'],
       ['5. Payable Days as per Breeze', '= TOTAL − Absent − Half Day Deduction − Leave Deduction − Early Going Deduction − Auto Logout Deduction.   A day with HD in any code (HD, P3HD, P4HD…) is present but paid 0.5. A day with EG in any code (EG, P3EG, P4EG…) is present, and every ' + model.opts.egN + ' EG days cut 1 day' + (model.opts.egN ? '' : ' (rule off)') + '. Absent counts 0' + (model.opts.leavePaid ? '.' : '; Leave is deducted.')],
-      ['6. Assumed days', model.cutoff < model.dim ? 'Attendance is taken till ' + pad(model.cutoff) + '/' + pad(model.month) + '. Days ' + asLbl + ' (' + (model.dim - model.cutoff) + ' days) are added as payable in advance. For an employee who left, only days up to the leaving date are added.' : 'Full month attendance is used, so no days are assumed.'],
-      ['7. Previous month status', model.prevDates.length ? 'Previous month days ' + prevLbl + ' were paid in advance last month. Their actual status from Breeze is checked now: Absent = −1, Half Day = −0.5' + (model.opts.leavePaid ? '' : ', Leave = −1') + ', others = 0. That total is in this column.' : 'Enter the adjustment for the previous month\'s advance days here (no previous month data was uploaded). Absent = −1, Half Day = −0.5.'],
-      ['Manual entries', 'Employees from the "Manual User" sheet are entered in the tool (light blue Emp Code and Name). If the employee is also in Breeze, Breeze days are kept and only the manually entered days (blue border) are replaced. Remarks show the source: "Based on Register Manual Entries" or "Based on Biometric Attendance Detail". "Full attendance" means every day is Present (no week off, holiday, leave, half day or early going).'],
-      ['8. Final Payable Days', '= Payable Days as per Breeze + Other Adjustment + MELA-EDF + Previous Month Status + Assumed days.   Yellow columns are for manual entry.']
+      ...(model.fullMonth ? [
+        ['6. Full month', 'The Breeze report covers the full month (' + fmtKey(model.gridDates[0]) + ' to ' + fmtKey(model.gridDates[nD - 1]) + '), so every day is taken from actual attendance. No days are assumed in advance and there is no previous month adjustment.']
+      ] : [
+        ['6. Assumed days', 'Attendance is taken till ' + pad(model.cutoff) + '/' + pad(model.month) + '. Days ' + asLbl + ' (' + (model.dim - model.cutoff) + ' days) are added as payable in advance. For an employee who left, only days up to the leaving date are added.'],
+        ['7. Previous month status', model.prevDates.length ? 'Previous month days ' + prevLbl + ' were paid in advance last month. Their actual status from Breeze is checked now: Absent = −1, Half Day = −0.5' + (model.opts.leavePaid ? '' : ', Leave = −1') + ', others = 0. That total is in this column.' : 'Enter the adjustment for the previous month\'s advance days here (no previous month data was uploaded). Absent = −1, Half Day = −0.5.']
+      ]),
+      [(model.fullMonth ? '7' : '8') + '. Final Payable Days', model.fullMonth ? '= Payable Days as per Breeze + Other Adjustment + MELA-EDF.   Yellow columns are for manual entry.' : '= Payable Days as per Breeze + Other Adjustment + MELA-EDF + Previous Month Status + Assumed days.   Yellow columns are for manual entry.']
     ];
     ex.forEach((e, i) => {
       const row = r + 1 + i;
@@ -1202,7 +1265,7 @@ tbody tr{transition:background .2s}
       const b = ws.getCell(row, 5);
       const n = v => (Math.round(v * 100) / 100).toString();
       b.value = 'TOTAL ' + x.total + ' − Absent ' + x.counts.AB + ' − Half Day Ded. ' + n(x.hdDed) + ' − Leave Ded. ' + n(x.lDed) + ' − EG Ded. ' + x.egDed + ' − Auto Logout Ded. ' + x.p3Ded +
-        ' = Payable ' + n(x.payable) + ';   + Previous month ' + n(x.prevAdj) + ' + Assumed ' + x.assumed + ' = Final ' + n(x.final) + ' days.';
+        ' = Payable ' + n(x.payable) + (model.fullMonth ? ' = Final ' + n(x.final) + ' days (full month).' : ';   + Previous month ' + n(x.prevAdj) + ' + Assumed ' + x.assumed + ' = Final ' + n(x.final) + ' days.');
       b.font = { size: 10, bold: true, color: { argb: 'FF065F46' } }; b.fill = fill('FFECFDF5'); b.alignment = { vertical: 'top', wrapText: true };
       ws.getRow(row).height = 24;
     }
@@ -1279,7 +1342,7 @@ async function load(kind, file, dz){
       st.textContent = '✓ ' + file.name + ' — ' + b.emps.length + ' employees, ' + A.fmtKey(b.dates[0]) + ' to ' + A.fmtKey(b.dates[b.dates.length-1]);
     }
     dz.classList.add('ok');
-    if (kind !== 'prev') { S.matches = {}; S.matchInfo = {}; }
+    if (kind !== 'prev') { S.matches = {}; S.matchInfo = {}; S.readyPending = true; }
     init(kind);
   } catch (e) { dz.classList.add('err'); st.textContent = '✗ ' + e.message; }
   dz.classList.remove('busy'); updateFlow();
@@ -1306,11 +1369,11 @@ function fillCut(){
   const dim = A.daysInMonth(y,m);
   const have = S.breeze.dates.filter(k=>k.slice(0,7)===ym).map(k=>+k.slice(8));
   const maxHave = Math.max(...have);
-  let def = dim > 25 ? 25 : dim;
-  if (maxHave < def) def = maxHave;
-  let h = '';
-  for (let d = 15; d < dim; d++) h += '<option value="'+d+'"'+(d===def?' selected':'')+'>Till '+String(d).padStart(2,'0')+' — assume '+String(d+1).padStart(2,'0')+' to '+dim+' as payable</option>';
-  h += '<option value="'+dim+'"'+(def===dim?' selected':'')+'>Full month (no assumed days)</option>';
+  const fullAvail = new Set(have).size >= dim;
+  // full month report -> full month mode; shorter report -> cut-off at the last date in the report (max 25)
+  const def = fullAvail ? dim : Math.min(maxHave, dim > 25 ? 25 : dim);
+  let h = '<option value="'+dim+'"'+(def===dim?' selected':'')+'>Full month (01–'+dim+')'+(fullAvail?' — recommended':'')+'</option>';
+  for (let d = dim - 1; d >= 15; d--) h += '<option value="'+d+'"'+(d===def?' selected':'')+'>Cut-off '+String(d).padStart(2,'0')+' (assume '+String(d+1).padStart(2,'0')+'–'+dim+')</option>';
   $('#sCut').innerHTML = h;
 }
 ['#sMonth'].forEach(s => $(s).addEventListener('change', () => { fillCut(); loadManual(); run(); }));
@@ -1318,11 +1381,23 @@ function fillCut(){
 $('#q').addEventListener('input', renderPreview);
 $('#flt').addEventListener('click', e => { const b=e.target.closest('button'); if(!b) return; S.filter=b.dataset.f; document.querySelectorAll('#flt button').forEach(x=>x.classList.toggle('on',x===b)); renderPreview(); });
 
+function isFull(){ const ym = $('#sMonth').value; if (!ym) return false; return +$('#sCut').value >= A.daysInMonth(+ym.slice(0,4), +ym.slice(5)); }
+function syncMode(){
+  const md = S.model; if (!md) return;
+  const full = md.fullMonth, dz = $('#dz-prev'), note = $('#prevNote');
+  dz.classList.toggle('off', full); dz.querySelector('input').disabled = full;
+  note.textContent = full ? 'Not needed — the full month is taken from actual attendance, so no days were paid in advance.' : 'Only for cut-off mode: checks the previous month days that were paid in advance (e.g. 26-09 to 30-09).';
+  document.querySelectorAll('.col-cut').forEach(th => th.style.display = full ? 'none' : '');
+  const f = A.fmtKey, g = md.gridDates;
+  $('#modeBanner').innerHTML = full
+    ? '<div class="mode full"><div class="mi"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 10h18M8 15l2.5 2.5L16 13"/></svg></div><div><b>Full month mode</b><span>Actual attendance ' + f(g[0]) + ' to ' + f(g[g.length-1]) + ' — every day comes from the report.</span></div><div class="chips"><i>No assumed days</i><i>No previous month adjustment</i></div></div>'
+    : '<div class="mode cut"><div class="mi"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 8v5l3 2"/><circle cx="12" cy="12" r="9"/></svg></div><div><b>Cut-off mode</b><span>Attendance ' + f(g[0]) + ' to ' + f(g[g.length-1]) + '; ' + (md.dim - md.cutoff) + ' day(s) after the cut-off are paid as assumed.</span></div><div class="chips"><i>' + (md.dim - md.cutoff) + ' assumed days</i><i>Previous month adjustment</i></div></div>';
+}
 function opts(){
   const ym = $('#sMonth').value;
   return { year:+ym.slice(0,4), month:+ym.slice(5), cutoff:+$('#sCut').value, leavePaid:$('#sLeave').value==='1',
     egN:+$('#sEG').value, p3N:$('#sP3').checked ? 3 : 0, hideTest:$('#sHide').checked, includeUnmatched:$('#sUnm').checked,
-    prevBreeze:S.prev, holidayMap:S.holMap, manualEntries: manualEntries(), matches:S.matches, matchInfo:S.matchInfo };
+    prevBreeze: isFull() ? null : S.prev, holidayMap:S.holMap, manualEntries: manualEntries(), matches:S.matches, matchInfo:S.matchInfo };
 }
 
 function locations(){
@@ -1345,7 +1420,7 @@ function run(){
   Object.keys(S.holMap).forEach(l => { if (!locs[l]) delete S.holMap[l]; });
   S.exported = false;
   S.model = A.buildModel(S.breeze, S.master, opts());
-  renderHol(locs); renderMatch(); renderManual(); renderPreview(); renderNotes(); countUps(); updateFlow();
+  syncMode(); renderHol(locs); renderMatch(); renderManual(); renderPreview(); renderNotes(); countUps(); updateFlow(); maybeReady();
 }
 
 /* ---- holiday mapping ---- */
@@ -1414,7 +1489,7 @@ function renderPreview(){
     '<tr><td><b>'+esc(r.name)+'</b>'+(r.manual?' <span class="badge b-blu">Manual</span>':'')+'<div class="hint mono">'+esc(r.code)+' · '+esc(r.desig)+(r.status==='Inactive'?' · <span style="color:#b91c1c;font-weight:700">Inactive</span>':'')+'</div></td>'+
     '<td>'+esc(r.location)+'<div class="hint">'+(r.matched?esc(r.company):'<span class="badge b-red">Not in master</span>')+'</div></td>'+
     '<td><div class="strip">'+md.gridDates.map(k=>chip(r.cells[k])).join('')+'</div></td>'+
-    '<td class="num" style="color:#b91c1c">'+r.counts.AB+'</td><td class="num">'+n(r.payable)+'</td><td class="num">'+(md.prevDates.length?n(r.prevAdj):'<span class="hint">—</span>')+'</td><td class="num">'+r.assumed+'</td>'+
+    '<td class="num" style="color:#b91c1c">'+r.counts.AB+'</td><td class="num">'+n(r.payable)+'</td>'+(md.fullMonth ? '' : '<td class="num">'+(md.prevDates.length?n(r.prevAdj):'<span class="hint">—</span>')+'</td><td class="num">'+r.assumed+'</td>')+
     '<td class="num" style="color:#047857;font-size:14px">'+n(r.final)+'</td><td class="hint" style="max-width:240px">'+esc(r.remarks)+'</td></tr>').join('') ||
     '<tr><td colspan="9" class="hint" style="padding:20px">No employees match this filter.</td></tr>';
 }
@@ -1609,7 +1684,7 @@ function updateFlow(){
   setNode(2, m ? 'done' : (b ? 'active' : ''), m ? m.master.list.length+' employees · '+(m.weekOffs||[]).length+' week offs' : (b ? 'Upload the master' : 'Waiting'));
   const at = attention();
   if (b && m) setNode(3, at.n ? 'warn' : 'done', at.n ? at.list[0] : 'All checks clear'); else setNode(3, '', 'Waiting');
-  if (b && m) setNode(4, S.exported ? 'done' : 'active', S.exported ? 'Downloaded' : (S.model ? n(S.model.rows.reduce((a,r)=>a+r.final,0))+' payable days ready' : 'Ready')); else setNode(4, '', 'Waiting');
+  if (b && m) setNode(4, S.exported ? 'done' : 'active', S.exported ? 'Downloaded' : (S.model ? n(S.model.rows.reduce((a,r)=>a+r.final,0))+' payable days' + (S.model.fullMonth ? ' · full month' : ' · cut-off') : 'Ready')); else setNode(4, '', 'Waiting');
   setSeg(1, !!b); setSeg(2, !!(b && m)); setSeg(3, !!(b && m));
   // stepper
   const st = document.querySelectorAll('#stepper button');
@@ -1656,8 +1731,7 @@ function burst(el){
 updateFlow();
 
 /* ---- export ---- */
-$('#exportBtn').addEventListener('click', async () => {
-  const btn = $('#exportBtn');
+async function doExport(btn){
   const ms = (S.master.manualUsers||[]).filter(x => S.manual[x.key] && S.manual[x.key].status==='include' && !S.manual[x.key].source);
   if (ms.length) { toast('Select the attendance source for: ' + ms.map(x=>x.name).join(', ')); document.querySelector('#muBody').scrollIntoView({behavior:'smooth'}); return; }
   btn.disabled = true;
@@ -1677,7 +1751,42 @@ $('#exportBtn').addEventListener('click', async () => {
     }
   } catch (e) { toast('Export failed: ' + e.message); }
   btn.disabled = false;
+}
+$('#exportBtn').addEventListener('click', () => doExport($('#exportBtn')));
+
+/* ---- "Payroll is ready" pop-up ---- */
+function maybeReady(){
+  if (!S.readyPending || !S.breeze || !S.master || !S.model) return;
+  S.readyPending = false;
+  setTimeout(openReady, reduced ? 0 : 450);
+}
+function openReady(){
+  const md = S.model, rows = md.rows, f = A.fmtKey, g = md.gridDates;
+  $('#rmTitle').textContent = 'Payroll is ready — ' + A.MONTHS[md.month-1] + ' ' + md.year;
+  $('#rmSub').textContent = (md.fullMonth ? 'Full month · ' : 'Cut-off mode · ') + f(g[0]) + ' to ' + f(g[g.length-1]) + (md.fullMonth ? ' · actual attendance' : ' · ' + (md.dim - md.cutoff) + ' days assumed');
+  $('#rmKpi').innerHTML = '<div><small>Employees</small><b>' + rows.length + '</b></div><div><small>Holiday marks</small><b>' + rows.reduce((a,r)=>a+r.holApplied,0) + '</b></div><div class="g"><small>Final payable days</small><b>' + n(rows.reduce((a,r)=>a+r.final,0)) + '</b></div>';
+  const at = attention(); const chk = [];
+  const nm = rows.filter(r=>!r.matched).length, unk = rows.filter(r=>/Unknown/.test(r.remarks)).length;
+  chk.push(at.holUnset ? ['wn', at.holUnset + ' location(s) have no holiday list', 'sec-holidays'] : ['ok', 'Holiday list set for every location']);
+  chk.push((S.master.weekOffs||[]).length ? ['ok', 'Week Off Master applied (' + S.master.weekOffs.length + ' employees)'] : ['wn', 'No Week Off Master sheet — Breeze week offs used', 'sec-upload']);
+  if (at.pend) chk.push(['wn', at.pend + ' manual user(s) pending — not in the report until included', 'sec-manual']);
+  if (at.src) chk.push(['wn', at.src + ' manual user(s) need an attendance source', 'sec-manual']);
+  chk.push(nm ? ['wn', nm + ' employee(s) not found in Employee Master (mostly left)', 'sec-names'] : ['ok', 'All employees found in Employee Master']);
+  if (unk) chk.push(['wn', unk + ' employee(s) with an unknown day code', 'sec-export']);
+  if (md.missingDates.length) chk.push(['wn', md.missingDates.length + ' date(s) missing in the Breeze report', 'sec-export']);
+  $('#rmChk').innerHTML = chk.map(c => '<li class="' + c[0] + '"><i>' + (c[0]==='ok'?'✓':'!') + '</i>' + esc(c[1]) + (c[2] ? '<a data-go="' + c[2] + '">Review</a>' : '') + '</li>').join('');
+  $('#readyModal').classList.remove('hidden');
+  setTimeout(() => $('#rmDownload').focus(), 50);
+}
+function closeReady(){ $('#readyModal').classList.add('hidden'); }
+$('#rmClose').addEventListener('click', closeReady);
+$('#readyModal').addEventListener('click', e => {
+  if (e.target.id === 'readyModal') return closeReady();
+  const a = e.target.closest('a[data-go]'); if (a) { closeReady(); document.getElementById(a.dataset.go).scrollIntoView({ behavior: reduced ? 'auto' : 'smooth' }); }
 });
+$('#rmReview').addEventListener('click', () => { closeReady(); $('#sec-export').scrollIntoView({ behavior: reduced ? 'auto' : 'smooth' }); });
+$('#rmDownload').addEventListener('click', async () => { await doExport($('#rmDownload')); if (S.exported) setTimeout(closeReady, 700); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#readyModal').classList.contains('hidden')) closeReady(); });
 })();
 </script>
 </body>
